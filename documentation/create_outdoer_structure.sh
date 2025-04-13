@@ -7,8 +7,8 @@ ROOT_DIR="C:\Users\reyes\OneDrive\Documents\Proyectos Propios\outdooer beta"
 ROOT_DIR=$(echo "$ROOT_DIR" | sed 's/\\/\//g')
 
 # Create the main project directory
-mkdir -p "$ROOT_DIR/outdoer-backend"
-cd "$ROOT_DIR/outdoer-backend"
+mkdir -p "$ROOT_DIR/outdooer-backend"
+cd "$ROOT_DIR/outdooer-backend"
 
 # Create root files
 touch .env .gitignore requirements.txt config.py run.py
@@ -68,4 +68,4 @@ touch tests/{test_auth,test_users,test_teams,test_microsites,test_activities,tes
 mkdir -p scripts
 touch scripts/{init_db,generate_test_data}.py scripts/deploy.sh
 
-echo "Outdoer backend project structure has been created at $ROOT_DIR/outdoer-backend"
+echo "outdooer backend project structure has been created at $ROOT_DIR/outdooer-backend"

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Database Initialization Script for Outdoer API
+Database Initialization Script for outdooer API
 
-This script initializes the PostgreSQL database for the Outdoer application:
+This script initializes the PostgreSQL database for the outdooer application:
 1. Creates database tables based on SQLAlchemy models
 2. Creates an admin user account
 3. Adds initial required data (roles, permissions, etc.)
@@ -47,12 +47,12 @@ def init_db(app, sample_data=False, reset=False):
         print("Tables created successfully")
         
         # Check if admin user exists
-        admin_exists = User.query.filter_by(email='admin@outdoer.com').first() is not None
+        admin_exists = User.query.filter_by(email='admin@outdooer.com').first() is not None
         
         if not admin_exists:
             print("Creating admin user...")
             admin_user = User(
-                email='admin@outdoer.com',
+                email='admin@outdooer.com',
                 password_hash=generate_password_hash('admin123'),  # Should be changed immediately
                 first_name='Admin',
                 last_name='User',
@@ -225,7 +225,7 @@ def create_sample_data(app):
 
 if __name__ == '__main__':
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description='Initialize the Outdoer database')
+    parser = argparse.ArgumentParser(description='Initialize the outdooer database')
     parser.add_argument('--sample-data', action='store_true', help='Add sample data for development/testing')
     parser.add_argument('--reset', action='store_true', help='Drop all tables and recreate (destroys existing data)')
     args = parser.parse_args()

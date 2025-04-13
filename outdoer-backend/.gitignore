@@ -72,7 +72,7 @@ firebase-debug.log
 temp/
 uploads/
 node_modules/
-outdoer-*.json
+outdooer-*.json
 
 # PostgreSQL
 *.dump

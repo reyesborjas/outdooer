@@ -30,7 +30,7 @@ class Config:
     DB_PASSWORD = os.getenv('DB_PASSWORD', '123456789')
     DB_HOST = os.getenv('DB_HOST', 'localhost')
     DB_PORT = os.getenv('DB_PORT', '5434')
-    DB_NAME = os.getenv('DB_NAME', 'outdoer')
+    DB_NAME = os.getenv('DB_NAME', 'outdooer')
     
     # Very simple connection string, avoiding special characters
     SQLALCHEMY_DATABASE_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
@@ -59,7 +59,7 @@ class Config:
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'True') == 'True'
     MAIL_USERNAME = os.getenv('MAIL_USERNAME', None)
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', None)
-    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@outdoer.com')
+    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', 'noreply@outdooer.com')
     
     # Payment Gateway Settings
     PAYMENT_GATEWAY = os.getenv('PAYMENT_GATEWAY', 'stripe')  # Options: stripe, paypal
@@ -124,7 +124,7 @@ class ProductionConfig(Config):
         
         # Set up file handler for error logs
         file_handler = RotatingFileHandler(
-            os.path.join(logs_dir, 'outdoer.log'),
+            os.path.join(logs_dir, 'outdooer.log'),
             maxBytes=10 * 1024 * 1024,  # 10 MB
             backupCount=10
         )
@@ -136,7 +136,7 @@ class ProductionConfig(Config):
         # Add handler to app logger
         app.logger.addHandler(file_handler)
         app.logger.setLevel(logging.INFO)
-        app.logger.info('Outdoer API startup')
+        app.logger.info('outdooer API startup')
         
         # Production should use Redis for rate limiting
         app.config['RATELIMIT_STORAGE_URL'] = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
@@ -147,7 +147,7 @@ class StagingConfig(ProductionConfig):
     DEBUG = True
     
     # Staging database (usually separate from production)
-    DB_NAME = os.getenv('DB_NAME', 'outdoer_staging')
+    DB_NAME = os.getenv('DB_NAME', 'outdooer_staging')
     SQLALCHEMY_DATABASE_URI = f'postgresql://{Config.DB_USER}:{Config.DB_PASSWORD}@{Config.DB_HOST}:{Config.DB_PORT}/{DB_NAME}'
 
 

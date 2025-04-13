@@ -22,17 +22,17 @@ try:
     
     # Check if our target database exists
     cursor = conn.cursor()
-    cursor.execute("SELECT 1 FROM pg_database WHERE datname='outdoer'")
+    cursor.execute("SELECT 1 FROM pg_database WHERE datname='outdooer'")
     exists = cursor.fetchone()
     
     if not exists:
-        print("Database 'outdoer' does not exist, creating it...")
+        print("Database 'outdooer' does not exist, creating it...")
         # Need to commit current transaction before creating DB
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-        cursor.execute("CREATE DATABASE outdoer")
-        print("Database 'outdoer' created successfully!")
+        cursor.execute("CREATE DATABASE outdooer")
+        print("Database 'outdooer' created successfully!")
     else:
-        print("Database 'outdoer' already exists!")
+        print("Database 'outdooer' already exists!")
     
     # Close connection
     cursor.close()

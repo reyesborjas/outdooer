@@ -45,6 +45,6 @@ def create_app(config_name):
     # A simple route to confirm the API is working
     @app.route('/api/health')
     def health_check():
-        return {"status": "ok", "message": "Outdoer API is running"}
+        return {"status": "ok", "message": "outdooer API is running"}
     
     return app

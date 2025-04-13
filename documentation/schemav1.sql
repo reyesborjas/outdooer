@@ -379,7 +379,7 @@ CREATE TABLE Communications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Outdoer Committee
+-- outdooer Committee
 CREATE TABLE CommitteeRoles (
     committee_role_id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES Users(user_id),
@@ -701,8 +701,8 @@ RETURNS TRIGGER AS $
 BEGIN
     -- Check if the committee member has appropriate authority based on action type
     IF NEW.action_type = 'permanent_ban' OR NEW.action_type = 'team_dissolution' THEN
-        IF NEW.committee_role_level > 1 THEN -- Only Outdoer CEO (level 1) can permanently ban or dissolve teams
-            RAISE EXCEPTION 'Only the Outdoer CEO has authority to % users or teams', 
+        IF NEW.committee_role_level > 1 THEN -- Only outdooer CEO (level 1) can permanently ban or dissolve teams
+            RAISE EXCEPTION 'Only the outdooer CEO has authority to % users or teams', 
                            CASE WHEN NEW.action_type = 'permanent_ban' THEN 'permanently ban' 
                                 ELSE 'dissolve' END;
         END IF;
