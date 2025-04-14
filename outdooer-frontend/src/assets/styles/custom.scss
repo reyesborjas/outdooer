@@ -1,0 +1,16 @@
+// src/assets/styles/custom.scss
+
+// Override Bootstrap variables
+$primary: #5f9ea0;
+$secondary: #d2b48c;
+$dark: #001a33;
+$light: #f5f5dc;
+$success: #6a994e;
+$warning: #bc8a5f;
+$danger: #bc4749;
+
+$body-bg: #f5f5dc;
+$body-color: #333333;
+
+// Import Bootstrap and its default variables
+@import 'bootstrap/scss/bootstrap';

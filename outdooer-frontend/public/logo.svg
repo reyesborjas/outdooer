@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect x="0" y="0" width="600" height="600" fill="#F0E6C3" />
+  
+  <!-- Striped background elements -->
+  <g>
+    <rect x="90" y="60" width="420" height="20" fill="#578F8B" />
+    <rect x="90" y="90" width="420" height="15" fill="#578F8B" />
+    <rect x="90" y="115" width="420" height="10" fill="#578F8B" />
+    <rect x="90" y="135" width="420" height="5" fill="#578F8B" />
+    
+    <rect x="90" y="520" width="420" height="20" fill="#B5A26A" />
+    <rect x="90" y="495" width="420" height="15" fill="#B5A26A" />
+    <rect x="90" y="475" width="420" height="10" fill="#B5A26A" />
+    <rect x="90" y="460" width="420" height="5" fill="#B5A26A" />
+  </g>
+  
+  <!-- Hexagon frame -->
+  <polygon points="300,50 500,175 500,425 300,550 100,425 100,175" fill="#578F8B" />
+  <polygon points="300,80 470,190 470,410 300,520 130,410 130,190" fill="#F0E6C3" stroke="#0F1E2D" stroke-width="8" />
+  <polygon points="300,100 450,200 450,400 300,500 150,400 150,200" fill="#578F8B" />
+  
+  <!-- Mountains -->
+  <path d="M150,320 L200,230 L250,300 L270,260 L320,320 L330,300 L380,230 L420,280 L450,320 L150,320" fill="#B5A26A" />
+  <path d="M190,280 L200,270 L210,280 L225,260 L240,280 L255,270 L270,280 Z" fill="#F0E6C3" />
+  <path d="M320,280 L330,270 L340,280 L360,250 L380,280 Z" fill="#F0E6C3" />
+  <path d="M250,290 L260,280 L270,290 Z" fill="#F0E6C3" />
+  
+  <!-- Lake -->
+  <path d="M150,320 L450,320 L450,340 C 420,350 380,360 300,360 C 220,360 180,350 150,340 Z" fill="#578F8B" />
+  
+  <!-- Trees -->
+  <g>
+    <path d="M170,330 L175,320 L180,330 L170,330" fill="#0F1E2D" />
+    <path d="M190,330 L195,315 L200,330 L190,330" fill="#0F1E2D" />
+    <path d="M210,330 L215,317 L220,330 L210,330" fill="#0F1E2D" />
+    <path d="M230,330 L235,318 L240,330 L230,330" fill="#0F1E2D" />
+    <path d="M250,330 L255,316 L260,330 L250,330" fill="#0F1E2D" />
+    <path d="M400,330 L405,320 L410,330 L400,330" fill="#0F1E2D" />
+    <path d="M420,330 L425,315 L430,330 L420,330" fill="#0F1E2D" />
+  </g>
+  <!-- More trees on the other side -->
+  <g>
+    <path d="M380,330 L385,316 L390,330 L380,330" fill="#0F1E2D" />
+    <path d="M360,330 L365,317 L370,330 L360,330" fill="#0F1E2D" />
+    <path d="M340,330 L345,318 L350,330 L340,330" fill="#0F1E2D" />
+    <path d="M320,330 L325,315 L330,330 L320,330" fill="#0F1E2D" />
+    <path d="M300,330 L305,320 L310,330 L300,330" fill="#0F1E2D" />
+    <path d="M280,330 L285,318 L290,330 L280,330" fill="#0F1E2D" />
+  </g>
+  
+  <!-- Compass Rose -->
+  <circle cx="300" cy="300" r="80" fill="none" stroke="#F0E6C3" stroke-width="3" />
+  <circle cx="300" cy="300" r="75" fill="none" stroke="#F0E6C3" stroke-width="1" />
+  <circle cx="300" cy="300" r="15" fill="#F0E6C3" stroke="#0F1E2D" stroke-width="2" />
+  <circle cx="300" cy="300" r="5" fill="#0F1E2D" />
+  
+  <!-- Compass Points -->
+  <path d="M300,220 L310,285 L300,300 L290,285 Z" fill="#0F1E2D" stroke="#F0E6C3" stroke-width="1" />
+  <path d="M380,300 L315,310 L300,300 L315,290 Z" fill="#0F1E2D" stroke="#F0E6C3" stroke-width="1" />
+  <path d="M300,380 L290,315 L300,300 L310,315 Z" fill="#0F1E2D" stroke="#F0E6C3" stroke-width="1" />
+  <path d="M220,300 L285,290 L300,300 L285,310 Z" fill="#0F1E2D" stroke="#F0E6C3" stroke-width="1" />
+  
+  <!-- Compass lines -->
+  <line x1="300" y1="225" x2="300" y2="375" stroke="#0F1E2D" stroke-width="1" />
+  <line x1="225" y1="300" x2="375" y2="300" stroke="#0F1E2D" stroke-width="1" />
+  <line x1="245" y1="245" x2="355" y2="355" stroke="#0F1E2D" stroke-width="1" />
+  <line x1="245" y1="355" x2="355" y2="245" stroke="#0F1E2D" stroke-width="1" />
+  
+  <!-- Compass labels -->
+  <text x="300" y="215" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#F0E6C3">N</text>
+  <text x="385" y="305" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#F0E6C3">E</text>
+  <text x="300" y="390" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#F0E6C3">S</text>
+  <text x="215" y="305" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#F0E6C3">W</text>
+  
+  <!-- Stars -->
+  <path d="M200,180 L203,187 L210,187 L205,192 L207,200 L200,195 L193,200 L195,192 L190,187 L197,187 Z" fill="#F0E6C3" />
+  <path d="M400,180 L403,187 L410,187 L405,192 L407,200 L400,195 L393,200 L395,192 L390,187 L397,187 Z" fill="#F0E6C3" />
+  <path d="M350,150 L353,157 L360,157 L355,162 L357,170 L350,165 L343,170 L345,162 L340,157 L347,157 Z" fill="#F0E6C3" />
+  
+  <!-- Moon -->
+  <circle cx="250" cy="170" r="15" fill="#F0E6C3" />
+  
+  <!-- Logo text -->
+  <text x="300" y="570" font-family="Arial, sans-serif" font-size="40" font-weight="bold" text-anchor="middle" fill="#0F1E2D">OUTDOER</text>
+  <text x="300" y="600" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#578F8B">OUTDOO • OUTDOOR • EXPLORE • RECREATE</text>
+</svg>
