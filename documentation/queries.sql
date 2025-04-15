@@ -177,18 +177,62 @@ VALUES
   ('dave@example.com', 'hashedpass4', 'Dave', 'Brown', '1992-07-08', 'ID901234', '+1234567893'),
   ('eve@example.com', 'hashedpass5', 'Eve', 'Davis', '1987-09-10', 'ID567890', '+1234567894');
 
-INSERT INTO Teams (team_name, master_guide_id)
+IINSERT INTO Activities (
+  team_id, location_id, title, description, start_date, end_date,
+  min_participants, max_participants, price, difficulty_level,
+  created_by, leader_id, created_at, updated_at, activity_status, activity_type_id
+)
 VALUES
-  ('Team Andes', 1),
-  ('Team Rockies', 2),
-  ('Team Coral', 3),
-  ('Team Savannah', 4),
-  ('Team Desert', 5);
-  ('Pathbuilders', 6),
-  ('Montana Rock Climbers', 7),
-  ('Coral', 8),
-  ('Rangers Pathfinders', 9),
-  ('Desert Crusaders', 10);
+  (4, (SELECT location_id FROM Locations WHERE location_name = 'Machu Picchu' LIMIT 1),
+    'Inca Trail Adventure', 'A 4-day trek following ancient Inca pathways to the iconic Machu Picchu',
+    '2025-06-15 07:00:00', '2025-06-19 18:00:00', 4, 12, 899.99, 'moderate',
+    4, 4, '2024-02-01 10:30:00', '2024-02-01 10:30:00', 'active', 1),
+
+  (4, (SELECT location_id FROM Locations WHERE location_name = 'Grand Teton National Park' LIMIT 1),
+    'Grand Teton Summit Challenge', 'Technical climbing expedition to the summit of Grand Teton',
+    '2025-07-22 05:30:00', '2025-07-25 17:00:00', 2, 8, 1299.99, 'extreme',
+    4, 4, '2024-02-02 11:15:00', '2024-02-02 11:15:00', 'active', 2),
+
+  (4, (SELECT location_id FROM Locations WHERE location_name LIKE 'Great Barrier%' LIMIT 1),
+    'Reef Explorer Dive Trip', 'Discover the vibrant marine life of the world''s largest coral reef system',
+    '2025-05-10 08:00:00', '2025-05-12 16:00:00', 3, 10, 499.99, 'moderate',
+    4, 4, '2024-02-03 09:45:00', '2024-02-03 09:45:00', 'active', 3),
+
+  (4, (SELECT location_id FROM Locations WHERE location_name = 'Milford Sound' LIMIT 1),
+    'Milford Sound Kayak Journey', 'Paddle through one of the world''s most stunning fjords surrounded by waterfalls and wildlife',
+    '2025-04-05 09:00:00', '2025-04-06 17:00:00', 2, 8, 349.99, 'moderate',
+    4, 4, '2024-02-04 14:20:00', '2024-02-04 14:20:00', 'active', 4),
+
+  (4, (SELECT location_id FROM Locations WHERE location_name = 'Uluru' LIMIT 1),
+    'Uluru Rock Climbing Weekend', 'Learn rock climbing skills on the unique formations of Uluru',
+    '2025-03-18 08:00:00', '2025-03-20 18:00:00', 4, 10, 449.99, 'difficult',
+    4, 4, '2024-02-05 16:45:00', '2024-02-05 16:45:00', 'active', 5),
+
+  (4, (SELECT location_id FROM Locations WHERE location_name = 'Serengeti National Park' LIMIT 1),
+    'Serengeti Migration Safari', 'Witness the great wildebeest migration across the Serengeti plains',
+    '2025-08-01 06:00:00', '2025-08-06 19:00:00', 4, 12, 2499.99, 'easy',
+    4, 4, '2024-02-06 08:30:00', '2024-02-06 08:30:00', 'active', 6),
+
+  (4, (SELECT location_id FROM Locations WHERE location_name = 'Zhangye Danxia Landform' LIMIT 1),
+    'Rainbow Mountains Photo Expedition', 'Capture the stunning colors of China''s rainbow mountains at optimal lighting conditions',
+    '2025-09-12 05:30:00', '2025-09-15 19:00:00', 3, 8, 999.99, 'easy',
+    4, 4, '2024-02-07 12:15:00', '2024-02-07 12:15:00', 'active', 7),
+
+  (4, (SELECT location_id FROM Locations WHERE location_name = 'Petra' LIMIT 1),
+    'Petra Ancient City Tour', 'Explore the hidden city carved into rose-colored rock and learn about its fascinating history',
+    '2025-10-05 07:00:00', '2025-10-07 17:00:00', 5, 15, 699.99, 'easy',
+    4, 4, '2024-02-08 09:30:00', '2024-02-08 09:30:00', 'active', 8),
+
+  (4, (SELECT location_id FROM Locations WHERE location_name = 'Mount Hood' LIMIT 1),
+    'Mount Hood Wilderness Camping', 'Experience pristine wilderness camping on the slopes of this iconic Pacific Northwest volcano',
+    '2025-07-18 13:00:00', '2025-07-21 11:00:00', 3, 10, 399.99, 'moderate',
+    4, 4, '2024-02-09 15:45:00', '2024-02-09 15:45:00', 'active', 9),
+
+  (4, (SELECT location_id FROM Locations WHERE location_name = 'Mont Blanc' LIMIT 1),
+    'Mont Blanc Multi-Adventure', 'Experience hiking, rock climbing, and paragliding in the stunning Mont Blanc area',
+    '2025-06-28 08:00:00', '2025-07-04 18:00:00', 4, 12, 1899.99, 'difficult',
+    4, 4, '2024-02-10 11:20:00', '2024-02-10 11:20:00', 'active', 10);
+
 
 
 

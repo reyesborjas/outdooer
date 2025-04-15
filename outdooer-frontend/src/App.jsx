@@ -1,19 +1,35 @@
+// src/App.jsx
+import { useState, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Router from './Router';
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
+import Sidebar from './components/Sidebar';
+import './styles/App.css';
 
 function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setSidebarOpen(window.innerWidth >= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
     <BrowserRouter>
       <AuthProvider>
-        <div className="app-container d-flex flex-column min-vh-100">
-          <Navbar />
-          <main className="flex-grow-1">
+        <div className="app-container">
+          <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+          <main className="main-content">
             <Router />
           </main>
-          <Footer />
         </div>
       </AuthProvider>
     </BrowserRouter>

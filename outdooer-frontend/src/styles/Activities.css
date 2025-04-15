@@ -1,0 +1,67 @@
+/* src/styles/Activities.css */
+.activities-container {
+    padding-bottom: 2rem;
+  }
+  
+  .filter-card {
+    background-color: rgba(95, 158, 160, 0.05);
+    border-color: rgba(95, 158, 160, 0.2);
+    margin-bottom: 1.5rem;
+  }
+  
+  .activity-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-color: rgba(95, 158, 160, 0.2);
+    overflow: hidden;
+  }
+  
+  .activity-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(95, 158, 160, 0.1);
+  }
+  
+  .activity-image-container {
+    height: 180px;
+    overflow: hidden;
+  }
+  
+  .activity-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  
+  .activity-card:hover .activity-image-container img {
+    transform: scale(1.05);
+  }
+  
+  .activity-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.9rem;
+  }
+  
+  .price {
+    font-weight: 600;
+    color: #5f9ea0;
+    font-size: 1.1rem;
+  }
+  
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 767px) {
+    .activities-container h1 {
+      font-size: 1.75rem;
+    }
+    
+    .filter-card .row > div:first-child {
+      margin-bottom: 1rem;
+    }
+  }

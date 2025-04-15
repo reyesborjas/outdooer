@@ -19,6 +19,10 @@ def create_app(config_name):
     with the specified configuration.
     """
     from config import config
+    from app.api.auth import auth_bp
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    from app.api.activities import activities_bp
+    app.register_blueprint(activities_bp, url_prefix='/api/activities')
     
     app = Flask(__name__)
     
@@ -53,5 +57,25 @@ def create_app(config_name):
     @app.route('/api/test')
     def test_api():
         return {"message": "API is working"}, 200
+    
+  # Add this to app/__init__.py, inside the create_app function
+    @app.route('/api/db-test')
+    def db_test():
+        try:
+            # Try a simple database query
+            from app.models.user import User
+            user_count = User.query.count()
+            return {
+                "status": "connected", 
+                "user_count": user_count,
+                "message": f"Database connection successful. Found {user_count} users."
+            }
+        except Exception as e:
+            import traceback
+            return {
+                "status": "error",
+                "message": f"Database connection error: {str(e)}",
+                "traceback": traceback.format_exc()
+            }, 500
     
     return app
