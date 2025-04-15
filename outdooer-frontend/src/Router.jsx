@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Activities from './pages/Activities';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import Dashboard from './components/Dashboard';
 
 // Import additional pages when you create them
 
@@ -22,7 +23,7 @@ const Router = () => {
       
       {/* Protected routes (require authentication) */}
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<div>Dashboard (Coming Soon)</div>} />
+      <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<div>Profile (Coming Soon)</div>} />
       </Route>
       

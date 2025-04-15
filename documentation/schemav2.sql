@@ -163,6 +163,17 @@ CREATE TABLE Activities (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     activity_status VARCHAR(20) DEFAULT 'active' -- draft, active, canceled, completed
+    activity_type_id INTEGER REFERENCES ActivityTypes(activity_type_id),
+    ); 
+
+alter table activities ADD column activity_type_id integer references activity_types(activity_type_id);
+
+CREATE TABLE activity_types (
+    activity_type_id SERIAL PRIMARY KEY,
+    activity_type_name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Activity Locations (linking activities to locations)

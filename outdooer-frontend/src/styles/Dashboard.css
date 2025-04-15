@@ -1,0 +1,53 @@
+/* src/styles/Dashboard.css */
+.dashboard-container {
+    padding-bottom: 2rem;
+  }
+  
+  .activity-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(95, 158, 160, 0.2);
+  }
+  
+  .activity-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(95, 158, 160, 0.1);
+  }
+  
+  .list-group-item.active {
+    background-color: rgba(95, 158, 160, 0.1);
+    color: #5f9ea0;
+    border-color: rgba(95, 158, 160, 0.2);
+  }
+  
+  .list-group-item:hover {
+    background-color: rgba(95, 158, 160, 0.05);
+    cursor: pointer;
+  }
+  
+  .map-container {
+    border-radius: 0.25rem;
+    overflow: hidden;
+    border: 1px solid rgba(95, 158, 160, 0.2);
+  }
+  
+  .card {
+    border-color: rgba(95, 158, 160, 0.2);
+  }
+  
+  .card-header {
+    background-color: rgba(95, 158, 160, 0.1);
+    border-bottom: 1px solid rgba(95, 158, 160, 0.2);
+  }
+  
+  .badge.bg-success {
+    background-color: #6a994e !important;
+  }
+  
+  .badge.bg-warning {
+    background-color: #bc8a5f !important;
+    color: #fff;
+  }
+  
+  .badge.bg-danger {
+    background-color: #bc4749 !important;
+  }
