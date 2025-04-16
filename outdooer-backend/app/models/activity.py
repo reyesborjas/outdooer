@@ -1,6 +1,9 @@
 # app/models/activity.py
 from app import db
 from datetime import datetime
+from app.models.location import Location  # Import the Location model
+from app.models.team import Team  # Import the Team model
+from app.models.user import User  # Import the User model
 
 class Activity(db.Model):
     __tablename__ = 'activities'
@@ -22,11 +25,8 @@ class Activity(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     activity_status = db.Column(db.String(20), default='active')
     
-    # Relationships
-    location = db.relationship('Location', backref='activities')
-    team = db.relationship('Team', backref='activities')
-    creator = db.relationship('User', foreign_keys=[created_by], backref='created_activities')
-    leader = db.relationship('User', foreign_keys=[leader_id], backref='led_activities')
-    
-    def __repr__(self):
-        return f'<Activity {self.title}>'
+    # Relationships with proper back_populates instead of backref
+    location = db.relationship('Location', back_populates='activities')
+    team = db.relationship('Team', back_populates='activities')
+    creator = db.relationship('User', foreign_keys=[created_by], back_populates='created_activities')
+    leader = db.relationship('User', foreign_keys=[leader_id], back_populates='led_activities')

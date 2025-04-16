@@ -25,7 +25,7 @@ class Location(db.Model):
     # Relationships
     aliases = db.relationship('LocationAlias', backref='location', lazy='dynamic')
     child_locations = db.relationship('Location', backref=db.backref('parent_location', remote_side=[location_id]))
-    
+    activities = db.relationship('Activity', back_populates='location')
     def __repr__(self):
         return f'<Location {self.location_name}>'
 

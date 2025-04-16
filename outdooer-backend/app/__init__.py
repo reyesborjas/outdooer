@@ -47,4 +47,7 @@ def create_app(config_name):
     def health_check():
         return {"status": "ok", "message": "outdooer API is running"}
     
+    from app.api.activities import activities_bp
+    app.register_blueprint(activities_bp, url_prefix='/api/activities')
+    
     return app

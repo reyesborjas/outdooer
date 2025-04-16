@@ -19,8 +19,6 @@ def get_all_activities():
                 'location_name': activity.location.location_name if activity.location else None,
                 'difficulty_level': activity.difficulty_level,
                 'price': float(activity.price) if activity.price else 0,
-                'start_date': activity.start_date.isoformat() if activity.start_date else None,
-                'end_date': activity.end_date.isoformat() if activity.end_date else None,
                 'min_participants': activity.min_participants,
                 'max_participants': activity.max_participants,
                 'status': activity.activity_status

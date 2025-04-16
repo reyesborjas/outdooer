@@ -2,6 +2,9 @@ from flask import jsonify, request
 from . import auth_bp
 from app.services.auth_service import AuthService
 from datetime import datetime
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models.user import User
+from app import db
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -48,9 +51,29 @@ def register():
     
     return jsonify(result), 201
 
+
+
 @auth_bp.route('/me', methods=['GET'])
+@jwt_required()
 def get_current_user():
-    """Get current user info"""
-    # This would typically use JWT to identify the user
-    # For now, return a placeholder
-    return jsonify({"error": "Not implemented yet"}), 501
+    """Get current user info from JWT token"""
+    current_user_id = get_jwt_identity()
+    
+    try:
+        user = User.query.get(current_user_id)
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+            
+        # Return user data (excluding sensitive information)
+        return jsonify({
+            "user_id": user.user_id,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "profile_image_url": user.profile_image_url,
+            "account_status": user.account_status
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Error retrieving user data: {str(e)}"}), 500
