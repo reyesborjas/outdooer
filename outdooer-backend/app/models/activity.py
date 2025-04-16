@@ -13,8 +13,6 @@ class Activity(db.Model):
     location_id = db.Column(db.Integer, db.ForeignKey('locations.location_id'))
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    start_date = db.Column(db.DateTime, nullable=False)
-    end_date = db.Column(db.DateTime, nullable=False)
     min_participants = db.Column(db.Integer, default=1)
     max_participants = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Numeric(10, 2), nullable=False)
