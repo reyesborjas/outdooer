@@ -11,7 +11,7 @@ class Team(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     team_status = db.Column(db.String(20), default='active')
-    
+    activities = db.relationship('Activity', back_populates='team')
     # Relationships
     members = db.relationship('TeamMember', backref='team', lazy='dynamic')
     role_config = db.relationship('TeamRoleConfiguration', backref='team', uselist=False)

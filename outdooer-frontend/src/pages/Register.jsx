@@ -11,6 +11,7 @@ const Register = () => {
     password: '',
     confirm_password: '',
     date_of_birth: '',
+    invitation_code: ''
   });
   
   const [validationErrors, setValidationErrors] = useState({});
@@ -207,7 +208,17 @@ const Register = () => {
                     </Form.Group>
                   </Col>
                 </Row>
-                
+                <Form.Label>Invitation Code (Optional)</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="invitation_code"
+                  value={formData.invitation_code}
+                  onChange={handleChange}
+                  placeholder="Enter invitation code if you have one"
+                />
+                <Form.Text className="text-muted">
+                  Required to register as a guide. Leave empty for explorer account.
+                </Form.Text>
                 <Form.Group className="mb-3">
                   <Form.Check
                     type="checkbox"

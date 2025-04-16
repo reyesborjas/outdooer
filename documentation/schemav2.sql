@@ -152,8 +152,6 @@ CREATE TABLE Activities (
     location_id INTEGER REFERENCES Locations(location_id),
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    start_date TIMESTAMP NOT NULL,
-    end_date TIMESTAMP NOT NULL,
     min_participants INTEGER DEFAULT 1,
     max_participants INTEGER NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
@@ -244,6 +242,35 @@ CREATE TABLE Routes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Table for storing invitation codes
+CREATE TABLE invitation_codes (
+    code_id SERIAL PRIMARY KEY,
+    code VARCHAR(20) UNIQUE NOT NULL,
+    role_type VARCHAR(20) NOT NULL, -- 'master_guide', 'guide'
+    team_id INTEGER REFERENCES teams(team_id),
+    created_by INTEGER REFERENCES users(user_id),
+    max_uses INTEGER DEFAULT 1,
+    used_count INTEGER DEFAULT 0,
+    expires_at TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for faster lookups by code
+CREATE INDEX idx_invitation_codes_code ON invitation_codes(code);
+
+-- Table for tracking invitation code usage
+CREATE TABLE invitation_usages (
+    usage_id SERIAL PRIMARY KEY,
+    code_id INTEGER REFERENCES invitation_codes(code_id),
+    user_id INTEGER REFERENCES users(user_id),
+    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for faster lookups
+CREATE INDEX idx_invitation_usages_code_id ON invitation_usages(code_id);
+CREATE INDEX idx_invitation_usages_user_id ON invitation_usages(user_id);
 
 -- Activity Routes (linking activities to routes)
 CREATE TABLE ActivityRoutes (
@@ -352,6 +379,28 @@ CREATE TABLE ExpeditionResources (
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE Guide_Activity_Instance (
+    instance_id SERIAL PRIMARY KEY,
+    guide_id INT NOT NULL REFERENCES Users(user_id),
+    activity_id INT NOT NULL REFERENCES Activities(activity_id),
+    team_id INT REFERENCES Teams(team_id),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Activity_Available_Date (
+    available_date_id SERIAL PRIMARY KEY,
+    activity_instance_id INT NOT NULL REFERENCES Guide_Activity_Instance(instance_id),
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    max_reservations INT DEFAULT 10,
+    location VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'open' -- valores esperados: 'open', 'closed', 'canceled'
+);
+
+
 
 -- Create indexes for activities and expeditions
 CREATE INDEX idx_activities_team_id ON Activities(team_id);
@@ -540,6 +589,29 @@ CREATE TABLE Reservations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CHECK (activity_id IS NOT NULL OR expedition_id IS NOT NULL)
+);
+
+ALTER TABLE Reservations
+ADD COLUMN available_date_id INTEGER REFERENCES Activity_Available_Date(available_date_id);
+
+CREATE TABLE Guide_Activity_Instance (
+    instance_id SERIAL PRIMARY KEY,
+    guide_id INTEGER NOT NULL REFERENCES Users(user_id),
+    activity_id INTEGER NOT NULL REFERENCES Activities(activity_id),
+    team_id INTEGER REFERENCES Teams(team_id),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Activity_Available_Date (
+    available_date_id SERIAL PRIMARY KEY,
+    activity_instance_id INTEGER NOT NULL REFERENCES Guide_Activity_Instance(instance_id),
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    max_reservations INTEGER DEFAULT 10,
+    location VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'open' -- valores esperados: open, closed, canceled
 );
 
 -- Reservation Participants
