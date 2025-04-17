@@ -19,12 +19,7 @@ def create_app(config_name):
     with the specified configuration.
     """
     from config import config
-    from app.api.auth import auth_bp
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    from app.api.activities import activities_bp
-    app.register_blueprint(activities_bp, url_prefix='/api/activities')
-    from app.api.invitation import invitations_bp
-    app.register_blueprint(invitations_bp, url_prefix='/api/invitations')
+    
     app = Flask(__name__)
     
     # Load configuration
@@ -36,10 +31,11 @@ def create_app(config_name):
     jwt.init_app(app)
     ma.init_app(app)
     
-    # Update CORS configuration here
+    # Initialize CORS with correct configuration
     cors.init_app(app, 
-                  resources={r"/api/*": {"origins": "*"}}, 
-                  supports_credentials=True)
+        resources={r"/api/*": {"origins": "http://localhost:5173"}}, 
+        supports_credentials=True,
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
     
     mail.init_app(app)
     
@@ -54,29 +50,10 @@ def create_app(config_name):
     def health_check():
         return {"status": "ok", "message": "outdooer API is running"}
     
-    # Add a test route that can be used to verify the API connection
-    @app.route('/api/test')
-    def test_api():
-        return {"message": "API is working"}, 200
+    from app.api.activities import activities_bp
+    app.register_blueprint(activities_bp, url_prefix='/api/activities')
     
-  # Add this to app/__init__.py, inside the create_app function
-    @app.route('/api/db-test')
-    def db_test():
-        try:
-            # Try a simple database query
-            from app.models.user import User
-            user_count = User.query.count()
-            return {
-                "status": "connected", 
-                "user_count": user_count,
-                "message": f"Database connection successful. Found {user_count} users."
-            }
-        except Exception as e:
-            import traceback
-            return {
-                "status": "error",
-                "message": f"Database connection error: {str(e)}",
-                "traceback": traceback.format_exc()
-            }, 500
+    from app.api.invitation import invitations_bp
+    app.register_blueprint(invitations_bp, url_prefix='/api/invitations')
     
     return app

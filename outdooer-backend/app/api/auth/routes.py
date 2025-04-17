@@ -41,7 +41,8 @@ def register():
     # Check for invitation code
     invitation_code = data.get('invitation_code')
     
-    result, error = AuthService.register(
+    # Use register_with_code instead of register
+    result, error = AuthService.register_with_code(
         data['email'],
         data['password'],
         data['first_name'],
@@ -54,8 +55,6 @@ def register():
         return jsonify({"error": error}), 400
     
     return jsonify(result), 201
-
-
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
