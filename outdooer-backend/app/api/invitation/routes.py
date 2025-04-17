@@ -6,6 +6,7 @@ from app.models.invitation import InvitationCode
 from app.models.user import User, UserRole
 from app.models.team import Team, TeamMember
 from app import db
+from datetime import datetime  # Add this import
 
 @invitations_bp.route('/generate', methods=['POST'])
 @jwt_required()
@@ -63,3 +64,30 @@ def generate_invitation():
         "expires_at": invitation.expires_at.isoformat(),
         "max_uses": invitation.max_uses
     }), 201
+
+# This route was previously indented inside the generate_invitation function
+@invitations_bp.route('/validate/<code>', methods=['GET'])
+def validate_invitation_code(code):
+    """Validate an invitation code and return info about it"""
+    invitation = InvitationCode.query.filter_by(code=code, is_active=True).first()
+    
+    if not invitation or invitation.used_count >= invitation.max_uses or invitation.expires_at < datetime.utcnow():
+        return jsonify({
+            "valid": False,
+            "message": "Invalid or expired invitation code"
+        }), 400
+    
+    response = {
+        "valid": True,
+        "role_type": invitation.role_type,
+        "message": f"Valid {invitation.role_type.replace('_', ' ')} invitation"
+    }
+    
+    # Add team name if applicable
+    if invitation.team_id:
+        team = Team.query.get(invitation.team_id)
+        if team:
+            response["team_id"] = team.team_id
+            response["team_name"] = team.team_name
+    
+    return jsonify(response)

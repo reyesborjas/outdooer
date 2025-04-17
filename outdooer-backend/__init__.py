@@ -23,7 +23,8 @@ def create_app(config_name):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     from app.api.activities import activities_bp
     app.register_blueprint(activities_bp, url_prefix='/api/activities')
-    
+    from app.api.invitation import invitations_bp
+    app.register_blueprint(invitations_bp, url_prefix='/api/invitations')
     app = Flask(__name__)
     
     # Load configuration

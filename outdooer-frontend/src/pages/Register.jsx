@@ -1,7 +1,8 @@
-import { useState, useContext } from 'react';
-import { Form, Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
+import { useState, useContext, useEffect } from 'react';
+import { Form, Button, Container, Row, Col, Card, Alert, Badge } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import axios from 'axios';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -16,8 +17,40 @@ const Register = () => {
   
   const [validationErrors, setValidationErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [codeValidating, setCodeValidating] = useState(false);
+  const [codeInfo, setCodeInfo] = useState(null);
   const { register, error, setError } = useContext(AuthContext);
   const navigate = useNavigate();
+  
+  // Validate invitation code when it changes
+  useEffect(() => {
+    const validateInvitationCode = async () => {
+      if (!formData.invitation_code || formData.invitation_code.length < 5) {
+        setCodeInfo(null);
+        return;
+      }
+      
+      console.log("Validating code:", formData.invitation_code);
+      setCodeValidating(true);
+      try {
+        const response = await axios.get(`/api/invitations/validate/${formData.invitation_code}`);
+        console.log("Validation response:", response.data);
+        setCodeInfo(response.data);
+      } catch (err) {
+        console.error("Validation error:", err);
+        setCodeInfo({ 
+          valid: false, 
+          message: 'Invalid or expired invitation code'
+        });
+      } finally {
+        setCodeValidating(false);
+      }
+    };
+    
+    // Debounce the validation to avoid too many API calls
+    const timeoutId = setTimeout(validateInvitationCode, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.invitation_code]);
   
   const handleChange = (e) => {
     setFormData({
@@ -208,17 +241,43 @@ const Register = () => {
                     </Form.Group>
                   </Col>
                 </Row>
-                <Form.Label>Invitation Code (Optional)</Form.Label>
-                <Form.Control
-                  type="text"
-                  name="invitation_code"
-                  value={formData.invitation_code}
-                  onChange={handleChange}
-                  placeholder="Enter invitation code if you have one"
-                />
-                <Form.Text className="text-muted">
-                  Required to register as a guide. Leave empty for explorer account.
-                </Form.Text>
+                
+                <Form.Group className="mb-3">
+                  <Form.Label>Invitation Code (Optional)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="invitation_code"
+                    value={formData.invitation_code}
+                    onChange={handleChange}
+                    placeholder="Enter invitation code if you have one"
+                    isValid={codeInfo?.valid}
+                    isInvalid={codeInfo?.valid === false}
+                  />
+                  {codeValidating && (
+                    <Form.Text className="text-muted">
+                      Validating code...
+                    </Form.Text>
+                  )}
+                  {codeInfo?.valid && (
+                    <Alert variant="success" className="mt-2">
+                      <strong>Valid code!</strong> {' '}
+                      {codeInfo.role_type === 'master_guide' ? (
+                        <>You'll be registered as a <Badge bg="primary">Master Guide</Badge> and will be able to create your own team.</>
+                      ) : (
+                        <>You'll be registered as a <Badge bg="info">Guide</Badge> {codeInfo.team_name && `for team "${codeInfo.team_name}"`}.</>
+                      )}
+                    </Alert>
+                  )}
+                  {codeInfo?.valid === false && (
+                    <Form.Control.Feedback type="invalid">
+                      {codeInfo.message}
+                    </Form.Control.Feedback>
+                  )}
+                  <Form.Text className="text-muted">
+                    Required to register as a guide. Leave empty for explorer account.
+                  </Form.Text>
+                </Form.Group>
+                
                 <Form.Group className="mb-3">
                   <Form.Check
                     type="checkbox"

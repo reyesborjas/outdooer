@@ -38,12 +38,16 @@ def register():
     except ValueError:
         return jsonify({"error": "Invalid date format for date_of_birth. Use YYYY-MM-DD"}), 400
     
+    # Check for invitation code
+    invitation_code = data.get('invitation_code')
+    
     result, error = AuthService.register(
         data['email'],
         data['password'],
         data['first_name'],
         data['last_name'],
-        date_of_birth
+        date_of_birth,
+        invitation_code
     )
     
     if error:

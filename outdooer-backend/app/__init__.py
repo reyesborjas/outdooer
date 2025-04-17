@@ -50,4 +50,7 @@ def create_app(config_name):
     from app.api.activities import activities_bp
     app.register_blueprint(activities_bp, url_prefix='/api/activities')
     
+    from app.api.invitation import invitations_bp
+    app.register_blueprint(invitations_bp, url_prefix='/api/invitations')
+    
     return app
