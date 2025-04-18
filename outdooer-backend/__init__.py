@@ -56,4 +56,8 @@ def create_app(config_name):
     from app.api.invitation import invitations_bp
     app.register_blueprint(invitations_bp, url_prefix='/api/invitations')
     
+
+    from app.api.locations import locations_bp
+    app.register_blueprint(locations_bp, url_prefix='/api/locations')
+    
     return app
