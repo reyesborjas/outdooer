@@ -51,4 +51,10 @@ def create_app(config_name):
     def health_check():
         return {"status": "ok", "message": "outdooer API is running"}
     
+    from app.api.activity_types import activity_types_bp
+    app.register_blueprint(activity_types_bp, url_prefix='/api/activity-types')
+    
+    from app.api.teams import teams_bp
+    app.register_blueprint(teams_bp, url_prefix='/api/teams')
+    
     return app

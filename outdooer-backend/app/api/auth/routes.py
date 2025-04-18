@@ -8,17 +8,19 @@ from app import db
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    """User login endpoint"""
     data = request.get_json()
-    
+
     if not data or 'email' not in data or 'password' not in data:
         return jsonify({"error": "Missing email or password"}), 400
     
-    result, error = AuthService.login(data['email'], data['password'])
-    
+    try:
+        result, error = AuthService.login(data['email'], data['password'])
+    except Exception as e:
+        return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
+
     if error:
         return jsonify({"error": error}), 401
-    
+
     return jsonify(result), 200
 
 @auth_bp.route('/register', methods=['POST'])

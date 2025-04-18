@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-outdooer API Backend - Entry Point
-This file serves as the main entry point for the outdooer backend application.
-"""
-
 import os
 from app import create_app
 

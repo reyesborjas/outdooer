@@ -160,5 +160,8 @@ class AuthService:
             }, None
             
         except Exception as e:
+            import traceback
+            traceback.print_exc()  # Esto imprimirá el traceback completo en consola
             db.session.rollback()
             return None, str(e)
+
