@@ -1,0 +1,91 @@
+/* src/styles/ActivityDates.css */
+.activity-dates-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .activity-dates-container h1 {
+    font-size: 1.75rem;
+    color: #2a6169;
+  }
+  
+  .activity-info h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+  }
+  
+  .activity-dates-table th {
+    background-color: rgba(95, 158, 160, 0.1);
+    color: #2a6169;
+    font-weight: 600;
+  }
+  
+  .reservation-bar {
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  
+  .reservation-progress {
+    height: 100%;
+    background-color: #5f9ea0;
+    border-radius: 3px;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+    color: white;
+  }
+  
+  .bg-success {
+    background-color: #5cb85c !important;
+  }
+  
+  .bg-secondary {
+    background-color: #6c757d !important;
+  }
+  
+  .bg-danger {
+    background-color: #d9534f !important;
+  }
+  
+  /* Modal styles */
+  .modal-header {
+    background-color: rgba(95, 158, 160, 0.1);
+    border-bottom: 1px solid rgba(95, 158, 160, 0.2);
+  }
+  
+  .modal-title {
+    color: #2a6169;
+  }
+  
+  .form-label {
+    color: #3a7a7e;
+    font-weight: 500;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 767px) {
+    .activity-dates-container h1 {
+      font-size: 1.5rem;
+    }
+    
+    .activity-info h2 {
+      font-size: 1.25rem;
+    }
+    
+    .activity-dates-table {
+      font-size: 0.875rem;
+    }
+  }

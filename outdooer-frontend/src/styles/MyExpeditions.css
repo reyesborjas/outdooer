@@ -1,0 +1,142 @@
+/* src/styles/MyExpeditions.css */
+.my-expeditions-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .filter-card {
+    background-color: rgba(95, 158, 160, 0.05);
+    border-color: rgba(95, 158, 160, 0.2);
+    margin-bottom: 1.5rem;
+  }
+  
+  .expedition-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-color: rgba(95, 158, 160, 0.2);
+  }
+  
+  .expedition-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(95, 158, 160, 0.1);
+  }
+  
+  .expedition-card .card-header {
+    background-color: rgba(95, 158, 160, 0.05);
+    border-bottom-color: rgba(95, 158, 160, 0.1);
+  }
+  
+  .expedition-description {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+  }
+  
+  .expedition-details {
+    margin-bottom: 1rem;
+  }
+  
+  .detail-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+  }
+  
+  .detail-value {
+    font-weight: 500;
+  }
+  
+  .expedition-stats {
+    height: 100%;
+  }
+  
+  .stat-card {
+    background-color: rgba(95, 158, 160, 0.05);
+    border-color: rgba(95, 158, 160, 0.2);
+  }
+  
+  .stat-card .card-body {
+    padding: 0.75rem 1rem;
+  }
+  
+  .price {
+    font-weight: 600;
+    color: #5f9ea0;
+  }
+  
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+  }
+  
+  .nav-tabs .nav-link {
+    color: #4a7f80;
+  }
+  
+  .nav-tabs .nav-link.active {
+    color: #2a6169;
+    font-weight: 500;
+    border-color: rgba(95, 158, 160, 0.2) rgba(95, 158, 160, 0.2) #fff;
+  }
+  
+  .dropdown-toggle::after {
+    display: none;
+  }
+  
+  .dropdown-menu {
+    min-width: 180px;
+    padding: 0.5rem 0;
+    border-color: rgba(95, 158, 160, 0.2);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dropdown-item {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+  }
+  
+  .dropdown-item:hover {
+    background-color: rgba(95, 158, 160, 0.1);
+  }
+  
+  .dropdown-item.text-danger:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+  }
+  
+  /* Badge colors */
+  .badge.bg-success {
+    background-color: #5cb85c !important;
+  }
+  
+  .badge.bg-warning {
+    background-color: #f0ad4e !important;
+    color: #212529;
+  }
+  
+  .badge.bg-danger {
+    background-color: #d9534f !important;
+  }
+  
+  .badge.bg-info {
+    background-color: #5bc0de !important;
+  }
+  
+  .badge.bg-secondary {
+    background-color: #6c757d !important;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 767px) {
+    .my-expeditions-container h1 {
+      font-size: 1.75rem;
+    }
+    
+    .filter-card .row > div:first-child {
+      margin-bottom: 1rem;
+    }
+    
+    .expedition-details .col-sm-6 {
+      margin-bottom: 0.5rem;
+    }
+  }

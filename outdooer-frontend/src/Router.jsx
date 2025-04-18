@@ -1,4 +1,4 @@
-// src/Router.jsx
+// src/Router.jsx - Updated with new routes
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -8,7 +8,15 @@ import Unauthorized from './pages/Unauthorized';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Dashboard from './components/Dashboard';
 import ActivityDetails from './pages/ActivityDetails';
-// Import additional pages when you create them
+
+// New components for activity and expedition management
+import NewActivity from './pages/NewActivity';
+import EditActivity from './pages/EditActivity';
+import ActivityDates from './pages/ActivityDates';
+import MyActivities from './pages/MyActivities';
+import NewExpedition from './pages/NewExpedition';
+import EditExpedition from './pages/EditExpedition';
+import MyExpeditions from './pages/MyExpeditions';
 
 const Router = () => {
   return (
@@ -40,10 +48,17 @@ const Router = () => {
       
       {/* Guide routes */}
       <Route element={<ProtectedRoute requiredRoles={['guide', 'master_guide']} />}>
-        <Route path="/create-activity" element={<div>Create Activity (Coming Soon)</div>} />
-        <Route path="/create-expedition" element={<div>Create Expedition (Coming Soon)</div>} />
-        <Route path="/my-activities" element={<div>My Activities (Coming Soon)</div>} />
-        <Route path="/my-expeditions" element={<div>My Expeditions (Coming Soon)</div>} />
+        {/* Activity Management */}
+        <Route path="/create-activity" element={<NewActivity />} />
+        <Route path="/edit-activity/:activityId" element={<EditActivity />} />
+        <Route path="/activity-dates/:activityId" element={<ActivityDates />} />
+        <Route path="/my-activities" element={<MyActivities />} />
+        
+        {/* Expedition Management */}
+        <Route path="/create-expedition" element={<NewExpedition />} />
+        <Route path="/edit-expedition/:expeditionId" element={<EditExpedition />} />
+        <Route path="/my-expeditions" element={<MyExpeditions />} />
+        <Route path="/expedition-participants/:expeditionId" element={<div>Expedition Participants (Coming Soon)</div>} />
       </Route>
       
       {/* Master Guide routes */}

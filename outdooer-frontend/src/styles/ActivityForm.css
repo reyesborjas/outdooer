@@ -1,0 +1,112 @@
+/* src/styles/ActivityForm.css */
+.activity-form-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  .card-header {
+    background-color: rgba(95, 158, 160, 0.1);
+    border-bottom: 1px solid rgba(95, 158, 160, 0.2);
+  }
+  
+  .card-header h1 {
+    font-size: 1.75rem;
+    color: #2a6169;
+  }
+  
+  .form-label {
+    font-weight: 500;
+    color: #3a7a7e;
+  }
+  
+  .form-control:focus, .form-select:focus {
+    border-color: #5f9ea0;
+    box-shadow: 0 0 0 0.25rem rgba(95, 158, 160, 0.25);
+  }
+  
+  .btn-primary {
+    background-color: #5f9ea0;
+    border-color: #5f9ea0;
+  }
+  
+  .btn-primary:hover, .btn-primary:focus {
+    background-color: #4a7f80;
+    border-color: #467375;
+  }
+  
+  .btn-primary:disabled {
+    background-color: #8fbfc1;
+    border-color: #8fbfc1;
+  }
+  
+  .btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+  }
+  
+  .required-field::after {
+    content: '*';
+    color: #dc3545;
+    margin-left: 4px;
+  }
+  
+  /* Available dates section */
+  .date-item {
+    background-color: rgba(95, 158, 160, 0.1);
+    border: 1px solid rgba(95, 158, 160, 0.2);
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .date-item:hover {
+    background-color: rgba(95, 158, 160, 0.2);
+  }
+  
+  .remove-date-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .add-date-btn {
+    background-color: rgba(95, 158, 160, 0.1);
+    border: 1px dashed rgba(95, 158, 160, 0.5);
+    color: #5f9ea0;
+    transition: all 0.3s ease;
+  }
+  
+  .add-date-btn:hover {
+    background-color: rgba(95, 158, 160, 0.2);
+    border-color: rgba(95, 158, 160, 0.8);
+  }
+  
+  /* Form sections */
+  .form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(95, 158, 160, 0.2);
+  }
+  
+  .form-section-title {
+    color: #2a6169;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 767px) {
+    .card-header h1 {
+      font-size: 1.5rem;
+    }
+    
+    .add-date-btn {
+      margin-top: 0.5rem;
+    }
+  }
