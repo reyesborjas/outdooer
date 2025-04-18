@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { Form, Button, Container, Row, Col, Card, Alert, Badge } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import axios from 'axios';
+import { authApi } from '../api/auth';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -30,12 +30,10 @@ const Register = () => {
         return;
       }
       
-      console.log("Validating code:", formData.invitation_code);
       setCodeValidating(true);
       try {
-        const response = await axios.get(`/api/invitations/validate/${formData.invitation_code}`);
-        console.log("Validation response:", response.data);
-        setCodeInfo(response.data);
+        const response = await authApi.validateInvitationCode(formData.invitation_code);
+        setCodeInfo(response);
       } catch (err) {
         console.error("Validation error:", err);
         setCodeInfo({ 

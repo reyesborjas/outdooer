@@ -1,6 +1,6 @@
 import { useState, useContext } from 'react';
 import { Form, Button, Container, Row, Col, Card, Alert } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
@@ -10,6 +10,10 @@ const Login = () => {
   
   const { login, error, setError } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if we have a redirect path from previous navigation
+  const from = location.state?.from?.pathname || '/dashboard';
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +23,7 @@ const Login = () => {
     try {
       const success = await login(email, password);
       if (success) {
-        navigate('/dashboard');
+        navigate(from, { replace: true });
       }
     } catch (err) {
       // Error is handled in AuthContext

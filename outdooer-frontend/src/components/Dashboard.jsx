@@ -4,11 +4,17 @@ import { Container, Row, Col, Card, Button, Spinner, Alert, Badge } from "react-
 import { Link, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import OpenLayersMap from "./OpenLayersMap";
+// import OpenLayersMap from "./OpenLayersMap"; // Uncomment when this component is ready
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user, isAuthenticated } = useContext(AuthContext);
+    const { 
+      user, 
+      isAuthenticated, 
+      isGuide, 
+      isMasterGuide, 
+      isAdmin 
+    } = useContext(AuthContext);
     
     // State variables
     const [upcomingExpeditions, setUpcomingExpeditions] = useState([]);
@@ -32,6 +38,14 @@ const Dashboard = () => {
         } catch (err) {
             return "Pending";
         }
+    };
+
+    // Get the appropriate role for display
+    const getRoleDisplay = () => {
+        if (isAdmin()) return "Admin";
+        if (isMasterGuide()) return "Master Guide";
+        if (isGuide()) return "Guide";
+        return "Explorer";
     };
 
     // Fetch user data on component mount
@@ -146,9 +160,30 @@ const Dashboard = () => {
         fetchData();
     }, [isAuthenticated]);
 
+    // Get appropriate welcome message based on role
+    const getWelcomeMessage = () => {
+        const role = getRoleDisplay();
+        const name = user?.first_name || "Explorer";
+        
+        if (role === "Admin") {
+            return `Welcome, Admin ${name}! Manage your outdoor platform.`;
+        } else if (role === "Master Guide") {
+            return `Welcome, Master Guide ${name}! Lead your team to new adventures.`;
+        } else if (role === "Guide") {
+            return `Welcome, Guide ${name}! Prepare for your next expedition.`;
+        } else {
+            return `Welcome, ${name}! Discover your next outdoor adventure.`;
+        }
+    };
+
     return (
         <Container className="dashboard-container py-4">
-            <h2 className="mb-4">Welcome, {user?.first_name || "Explorer"}!</h2>
+            <Row>
+                <Col>
+                    <h2 className="mb-2">{getWelcomeMessage()}</h2>
+                    <p className="text-muted mb-4">Your dashboard for {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                </Col>
+            </Row>
             
             {loading ? (
                 <div className="text-center my-5">
@@ -159,6 +194,80 @@ const Dashboard = () => {
                 <Alert variant="danger">{error}</Alert>
             ) : (
                 <>
+                    {/* Role-specific action buttons */}
+                    {isGuide() && (
+                        <Row className="mb-4">
+                            <Col>
+                                <Card className="shadow-sm">
+                                    <Card.Body className="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 className="mb-1">Guide Actions</h5>
+                                            <p className="text-muted mb-0">Quick access to guide functions</p>
+                                        </div>
+                                        <div className="d-flex gap-2">
+                                            <Button 
+                                                variant="primary" 
+                                                onClick={() => navigate('/create-expedition')}
+                                            >
+                                                Create Expedition
+                                            </Button>
+                                            <Button 
+                                                variant="outline-primary" 
+                                                onClick={() => navigate('/create-activity')}
+                                            >
+                                                Create Activity
+                                            </Button>
+                                            {isMasterGuide() && (
+                                                <Button 
+                                                    variant="outline-primary" 
+                                                    onClick={() => navigate('/team-management')}
+                                                >
+                                                    Manage Team
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        </Row>
+                    )}
+
+                    {/* Admin-specific action buttons */}
+                    {isAdmin() && (
+                        <Row className="mb-4">
+                            <Col>
+                                <Card className="shadow-sm">
+                                    <Card.Body className="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 className="mb-1">Admin Actions</h5>
+                                            <p className="text-muted mb-0">Manage the Outdooer platform</p>
+                                        </div>
+                                        <div className="d-flex gap-2">
+                                            <Button 
+                                                variant="primary" 
+                                                onClick={() => navigate('/admin')}
+                                            >
+                                                Admin Dashboard
+                                            </Button>
+                                            <Button 
+                                                variant="outline-primary" 
+                                                onClick={() => navigate('/admin/users')}
+                                            >
+                                                Manage Users
+                                            </Button>
+                                            <Button 
+                                                variant="outline-primary" 
+                                                onClick={() => navigate('/admin/teams')}
+                                            >
+                                                Manage Teams
+                                            </Button>
+                                        </div>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        </Row>
+                    )}
+
                     {/* Map and Upcoming Expeditions Row */}
                     <Row className="mb-4">
                         {/* Map */}
@@ -297,5 +406,4 @@ const Dashboard = () => {
         </Container>
     );
 };
-
 export default Dashboard;

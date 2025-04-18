@@ -1,6 +1,6 @@
+// src/api/auth.js
 import api from './index';
 
-// Change from object export to named export
 export const authApi = {
   login: async (credentials) => {
     try {
@@ -32,11 +32,20 @@ export const authApi = {
     }
   },
   
+  validateInvitationCode: async (code) => {
+    try {
+      const response = await api.get(`/invitations/validate/${code}`);
+      return response.data;
+    } catch (error) {
+      console.error('Invitation code validation error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+  
   logout: async () => {
     // This might be a server call or just client-side cleanup
     localStorage.removeItem('token');
   }
 };
 
-// You can also add this default export if needed
-// export default authApi;
+export default authApi;

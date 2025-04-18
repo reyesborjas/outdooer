@@ -18,14 +18,26 @@ class AuthService:
         if not user or not verify_password(user.password_hash, password):
             return None, "Invalid email or password"
         
+        # Get user roles
+        user_roles = UserRole.query.filter_by(user_id=user.user_id).all()
+        roles = [role.role_type for role in user_roles]
+        
         # Create tokens
         access_token = create_access_token(identity=user.user_id)
         refresh_token = create_refresh_token(identity=user.user_id)
         
+        # Update last login timestamp
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
-            "user_id": user.user_id
+            "user_id": user.user_id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "roles": roles
         }, None
     
     @staticmethod
@@ -68,11 +80,11 @@ class AuthService:
                     return None, "Invitation code has reached maximum usage"
                 
                 # Set role based on invitation type
-                role_type = 'guide'
+                role_type = code.role_type if code.role_type in ['guide', 'master_guide'] else 'guide'
                 
                 # If this is a team leader code
                 if code.role_type == 'master_guide':
-    # Create new team for the user
+                    # Create new team for the user
                     new_team = Team(
                         team_name=f"{first_name}'s Team",
                         master_guide_id=new_user.user_id
@@ -118,7 +130,19 @@ class AuthService:
             )
             db.session.add(user_role)
             
+            # Add explorer role if registering as guide (all guides are also explorers)
+            if role_type != 'explorer':
+                explorer_role = UserRole(
+                    user_id=new_user.user_id,
+                    role_type='explorer'
+                )
+                db.session.add(explorer_role)
+            
             db.session.commit()
+            
+            # Get user roles for response
+            user_roles = UserRole.query.filter_by(user_id=new_user.user_id).all()
+            roles = [role.role_type for role in user_roles]
             
             # Create tokens for the new user
             access_token = create_access_token(identity=new_user.user_id)
@@ -126,9 +150,12 @@ class AuthService:
             
             return {
                 "user_id": new_user.user_id,
+                "first_name": new_user.first_name,
+                "last_name": new_user.last_name,
+                "email": new_user.email,
                 "access_token": access_token,
                 "refresh_token": refresh_token,
-                "role": role_type,
+                "roles": roles,
                 "team_id": team_id
             }, None
             

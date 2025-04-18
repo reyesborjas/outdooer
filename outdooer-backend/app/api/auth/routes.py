@@ -3,7 +3,7 @@ from . import auth_bp
 from app.services.auth_service import AuthService
 from datetime import datetime
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models.user import User
+from app.models.user import User, UserRole
 from app import db
 
 @auth_bp.route('/login', methods=['POST'])
@@ -67,6 +67,10 @@ def get_current_user():
         
         if not user:
             return jsonify({"error": "User not found"}), 404
+        
+        # Get user roles
+        user_roles = UserRole.query.filter_by(user_id=current_user_id).all()
+        roles = [role.role_type for role in user_roles]
             
         # Return user data (excluding sensitive information)
         return jsonify({
@@ -75,7 +79,8 @@ def get_current_user():
             "first_name": user.first_name,
             "last_name": user.last_name,
             "profile_image_url": user.profile_image_url,
-            "account_status": user.account_status
+            "account_status": user.account_status,
+            "roles": roles
         }), 200
         
     except Exception as e:

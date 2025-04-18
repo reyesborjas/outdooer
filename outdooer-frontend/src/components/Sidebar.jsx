@@ -1,5 +1,5 @@
 // src/components/Sidebar.jsx
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useContext } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { 
@@ -12,7 +12,10 @@ import {
   FaUserCircle, 
   FaSignOutAlt,
   FaBars,
-  FaTimes
+  FaTimes,
+  FaClipboardCheck,
+  FaChartLine,
+  FaShieldAlt
 } from 'react-icons/fa';
 import '../styles/Sidebar.css';
 import logo from '../assets/images/logo.png'; // Make sure to add your logo
@@ -20,23 +23,22 @@ import logo from '../assets/images/logo.png'; // Make sure to add your logo
 const Sidebar = ({ isOpen, toggleSidebar }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated } = useContext(AuthContext);
-  const [userRole, setUserRole] = useState('explorer'); // Default role
-
-  useEffect(() => {
-    // Determine user role from authenticated user data
-    if (user?.roles?.includes('guide')) {
-      setUserRole('guide');
-    }
-  }, [user]);
+  const { 
+    user, 
+    logout, 
+    isAuthenticated, 
+    isAdmin,
+    isGuide,
+    isMasterGuide
+  } = useContext(AuthContext);
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
-  // Common menu items for all users
-  const menuItems = [
+  // Common menu items for all authenticated users
+  const commonMenuItems = [
     { 
       path: '/dashboard', 
       name: 'Dashboard', 
@@ -52,6 +54,20 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       name: 'Activities', 
       icon: <FaMountain /> 
     },
+  ];
+
+  // Guide-specific menu items
+  const guideMenuItems = [
+    { 
+      path: '/my-expeditions', 
+      name: 'My Expeditions', 
+      icon: <FaCalendarAlt /> 
+    },
+    { 
+      path: '/my-activities', 
+      name: 'My Activities', 
+      icon: <FaClipboardCheck /> 
+    },
     { 
       path: '/teams', 
       name: 'Guide Teams', 
@@ -59,19 +75,51 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     }
   ];
 
-  // Additional menu items for guides
-  const guideMenuItems = [
+  // Master Guide specific items
+  const masterGuideItems = [
     { 
-      path: '/my-expeditions', 
-      name: 'My Expeditions', 
-      icon: <FaCalendarAlt /> 
+      path: '/team-management', 
+      name: 'Team Management', 
+      icon: <FaUsers /> 
+    },
+    { 
+      path: '/earnings', 
+      name: 'Earnings', 
+      icon: <FaChartLine /> 
     }
   ];
 
-  // Get the appropriate menu items based on user role
-  const visibleMenuItems = userRole === 'guide' 
-    ? [...menuItems, ...guideMenuItems] 
-    : menuItems;
+  // Admin specific items
+  const adminItems = [
+    { 
+      path: '/admin', 
+      name: 'Admin Panel', 
+      icon: <FaShieldAlt /> 
+    }
+  ];
+
+  // Get the appropriate menu items based on user roles
+  let visibleMenuItems = [...commonMenuItems];
+  
+  if (isGuide()) {
+    visibleMenuItems = [...visibleMenuItems, ...guideMenuItems];
+  }
+  
+  if (isMasterGuide()) {
+    visibleMenuItems = [...visibleMenuItems, ...masterGuideItems];
+  }
+  
+  if (isAdmin()) {
+    visibleMenuItems = [...visibleMenuItems, ...adminItems];
+  }
+
+  // Get appropriate role display
+  const getRoleDisplay = () => {
+    if (isAdmin()) return 'Admin';
+    if (isMasterGuide()) return 'Master Guide';
+    if (isGuide()) return 'Guide';
+    return 'Explorer';
+  };
 
   return (
     <>
@@ -106,13 +154,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </div>
             <div className="user-info">
               <h5>{user?.first_name} {user?.last_name}</h5>
-              <span className="user-role">{userRole === 'guide' ? 'Guide' : 'Explorer'}</span>
+              <span className="user-role">{getRoleDisplay()}</span>
             </div>
           </div>
         )}
 
         {/* Create expedition/activity buttons for guides */}
-        {userRole === 'guide' && (
+        {isGuide() && (
           <div className="sidebar-actions">
             <button className="create-btn" onClick={() => navigate('/create-expedition')}>
               + New Expedition
