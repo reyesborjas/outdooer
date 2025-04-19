@@ -1,4 +1,4 @@
-# Create a new file: app/api/locations/routes.py
+# app/api/locations/routes.py
 from flask import jsonify
 from . import locations_bp
 from app.models.location import Location
@@ -19,6 +19,8 @@ def get_locations():
                 'location_id': location.location_id,
                 'location_name': location.location_name,
                 'location_type': location.location_type,
+                'country_code': location.country_code,
+                'region_code': location.region_code,
                 'latitude': float(location.latitude) if location.latitude else None,
                 'longitude': float(location.longitude) if location.longitude else None
             })
@@ -27,12 +29,10 @@ def get_locations():
     except Exception as e:
         print(f"Error fetching locations: {str(e)}")
         return jsonify({'error': 'Failed to fetch locations'}), 500
-    
-    # app/api/locations/routes.py
 
 @locations_bp.route('/search', methods=['GET'])
 def search_locations():
-    """Search locations by name, country, or region"""
+    """Search locations by name, country, region, or type"""
     search_term = request.args.get('q', '')
     
     if not search_term or len(search_term) < 2:
@@ -48,6 +48,7 @@ def search_locations():
                 Location.location_name.ilike(search_pattern),
                 Location.country_code.ilike(search_pattern),
                 Location.region_code.ilike(search_pattern),
+                Location.location_type.ilike(search_pattern),
                 Location.formatted_address.ilike(search_pattern)
             )
         ).limit(20).all()

@@ -1,124 +1,140 @@
 // src/components/SearchableDropdown.jsx
-import React, { useState, useEffect } from 'react';
-import { Form, InputGroup, Dropdown, Button, Spinner } from 'react-bootstrap';
-import { FaSearch, FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { Form, InputGroup, Dropdown, Spinner } from 'react-bootstrap';
+import '../styles/SearchableDropdown.css';
+
+const getFormattedDisplayText = (item, displayKey) => {
+  if (!item) return '';
+  let display = '';
+  if (item.country_code) display += item.country_code;
+  if (item.region_code) display += display ? ', ' + item.region_code : item.region_code;
+  if (item[displayKey]) display += display ? ', ' + item[displayKey] : item[displayKey];
+  if (item.location_type) display += ` (${item.location_type})`;
+  return display || 'Unknown location';
+};
 
 const SearchableDropdown = ({
+  label,
   items,
   onSelect,
   value,
   valueKey,
   displayKey,
   extraDisplayKeys = [],
-  placeholder = "Search...",
-  label,
-  isLoading = false,
+  placeholder,
   required = false,
+  isLoading = false,
   searchKeys = [],
-  noResultsMessage = "No results found"
+  noResultsMessage = 'No results found'
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
   const [filteredItems, setFilteredItems] = useState([]);
-  
-  // Get the display value for the selected item
-  const getDisplayValue = () => {
-    if (!value) return '';
-    
-    const selectedItem = items.find(item => item[valueKey] === Number(value) || item[valueKey] === value);
-    if (!selectedItem) return '';
-    
-    return selectedItem[displayKey];
-  };
-  
-  // Filter items based on search term
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedLabel, setSelectedLabel] = useState('');
+  const dropdownRef = useRef(null);
+
+  // Set selected label when value or items change
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredItems(items);
+    if (!value || !items || items.length === 0) {
+      if (selectedLabel !== '') setSelectedLabel('');
       return;
     }
+
+    const selected = items.find(item => item[valueKey] === value);
+    const newLabel = selected ? getFormattedDisplayText(selected, displayKey) : '';
     
-    const search = searchTerm.toLowerCase().trim();
-    
+    // Only update if the label actually changed
+    if (newLabel !== selectedLabel) {
+      setSelectedLabel(newLabel);
+    }
+  }, [value, items, valueKey, displayKey, selectedLabel]);
+
+  // Filter dropdown items
+  useEffect(() => {
+    if (!items || items.length === 0) {
+      setFilteredItems([]);
+      return;
+    }
+
+    if (searchTerm.trim() === '') {
+      setFilteredItems(items.slice(0, 20));
+      return;
+    }
+
+    const searchTermLower = searchTerm.toLowerCase();
     const filtered = items.filter(item => {
-      // Search in all specified keys
-      return searchKeys.some(key => {
-        if (!item[key]) return false;
-        return item[key].toString().toLowerCase().includes(search);
+      if (searchKeys && searchKeys.length > 0) {
+        return searchKeys.some(key => {
+          const value = item[key];
+          return value && String(value).toLowerCase().includes(searchTermLower);
+        });
+      }
+
+      const displayValue = item[displayKey];
+      if (displayValue && String(displayValue).toLowerCase().includes(searchTermLower)) {
+        return true;
+      }
+
+      return extraDisplayKeys.some(key => {
+        const value = item[key];
+        return value && String(value).toLowerCase().includes(searchTermLower);
       });
     });
-    
-    setFilteredItems(filtered);
-  }, [searchTerm, items, searchKeys]);
-  
-  // Format the item display
-  const formatItemDisplay = (item) => {
-    if (extraDisplayKeys.length === 0) {
-      return item[displayKey];
-    }
-    
-    // Format with extra information, e.g., "Country, Region - Location Name"
-    const extraInfo = extraDisplayKeys
-      .map(key => item[key])
-      .filter(value => value)
-      .join(', ');
-      
-    return extraInfo ? `${extraInfo} - ${item[displayKey]}` : item[displayKey];
-  };
-  
-  const handleSelect = (selectedItem) => {
-    onSelect(selectedItem[valueKey]);
-    setShowDropdown(false);
+
+    setFilteredItems(filtered.slice(0, 20));
+  }, [searchTerm, items, displayKey, extraDisplayKeys, searchKeys]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleSelect = (item) => {
+    onSelect(item[valueKey]);
     setSearchTerm('');
+    setIsOpen(false);
   };
-  
-  const handleClear = () => {
-    onSelect('');
-    setSearchTerm('');
-  };
-  
+
   return (
-    <Form.Group className="mb-3">
-      {label && <Form.Label>{label}{required && <span className="text-danger">*</span>}</Form.Label>}
-      
+    <Form.Group className="mb-3 searchable-dropdown" ref={dropdownRef}>
+      <Form.Label>{label}{required && <span className="text-danger">*</span>}</Form.Label>
       <InputGroup>
         <Form.Control
           type="text"
-          placeholder={placeholder}
-          onClick={() => setShowDropdown(true)}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onFocus={() => setShowDropdown(true)}
-          value={searchTerm || getDisplayValue()}
-          required={required}
+          placeholder={placeholder || `Search ${label}...`}
+          value={searchTerm || selectedLabel} // Display selected label or search term
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setIsOpen(true);
+          }}
+          onClick={() => setIsOpen(true)}
+          autoComplete="off"
         />
-        
-        {value && (
-          <Button 
-            variant="outline-secondary" 
-            onClick={handleClear}
-            title="Clear selection"
-          >
-            <FaTimes />
-          </Button>
-        )}
-        
-        <InputGroup.Text>
-          {isLoading ? <Spinner animation="border" size="sm" /> : <FaSearch />}
-        </InputGroup.Text>
       </InputGroup>
-      
-      <Dropdown show={showDropdown} onToggle={setShowDropdown} className="mt-1">
-        <Dropdown.Menu 
-          style={{ width: '100%', maxHeight: '300px', overflowY: 'auto' }}
-        >
-          {filteredItems.length > 0 ? (
-            filteredItems.map(item => (
+
+      <Dropdown show={isOpen} className="w-100">
+        <Dropdown.Menu className="w-100">
+          {isLoading ? (
+            <div className="text-center p-2">
+              <Spinner animation="border" size="sm" /> Loading...
+            </div>
+          ) : filteredItems.length > 0 ? (
+            filteredItems.map((item, index) => (
               <Dropdown.Item 
-                key={item[valueKey]} 
+                key={`${item[valueKey] || 'item'}-${index}`}
                 onClick={() => handleSelect(item)}
                 active={value === item[valueKey]}
               >
-                {formatItemDisplay(item)}
+                {getFormattedDisplayText(item, displayKey)}
               </Dropdown.Item>
             ))
           ) : (
@@ -126,8 +142,14 @@ const SearchableDropdown = ({
           )}
         </Dropdown.Menu>
       </Dropdown>
+
+      <Form.Control 
+        type="hidden" 
+        value={value || ''} 
+        required={required} 
+      />
     </Form.Group>
   );
 };
 
-export default SearchableDropdown;
+export default React.memo(SearchableDropdown);

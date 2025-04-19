@@ -1,8 +1,7 @@
 // src/pages/NewActivity.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { Container, Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 import '../styles/ActivityForm.css';
@@ -12,8 +11,7 @@ import SimilarActivityWarning from '../components/SimilarActivityWarning';
 const NewActivity = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isGuide } = useContext(AuthContext);
-  
-  // Form state
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -25,8 +23,7 @@ const NewActivity = () => {
     activity_type_id: '',
     team_id: ''
   });
-  
-  // UI state
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -38,37 +35,32 @@ const NewActivity = () => {
   const [checkingSimilar, setCheckingSimilar] = useState(false);
   const [isTitleUnique, setIsTitleUnique] = useState(true);
   const [isTitleChecking, setIsTitleChecking] = useState(false);
-  
-  // Check if user is authorized to create activities
+
+  const memoizedLocations = useMemo(() => locations, [locations]);
+  const memoizedActivityTypes = useMemo(() => activityTypes, [activityTypes]);
+
   useEffect(() => {
     if (!isAuthenticated || !isGuide()) {
       navigate('/unauthorized');
     }
   }, [isAuthenticated, isGuide, navigate]);
-  
-  // Fetch necessary data (locations, activity types, teams)
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoadingLocations(true);
-        // Fetch locations
-        const locationsResponse = await api.get('/locations');
-        setLocations(locationsResponse.data.locations || []);
-        
-        // Fetch activity types
-        const typesResponse = await api.get('/activity-types');
-        setActivityTypes(typesResponse.data.activity_types || []);
-        
-        // Fetch teams user belongs to
-        const teamsResponse = await api.get('/teams/my-teams');
-        setTeams(teamsResponse.data.teams || []);
-        
-        // Set default team if user belongs to only one team
-        if (teamsResponse.data.teams && teamsResponse.data.teams.length === 1) {
-          setFormData(prev => ({
-            ...prev,
-            team_id: teamsResponse.data.teams[0].team_id
-          }));
+        const [locationsRes, typesRes, teamsRes] = await Promise.all([
+          api.get('/locations'),
+          api.get('/activity-types'),
+          api.get('/teams/my-teams')
+        ]);
+
+        setLocations(locationsRes.data.locations || []);
+        setActivityTypes(typesRes.data.activity_types || []);
+        setTeams(teamsRes.data.teams || []);
+
+        if (teamsRes.data.teams?.length === 1) {
+          setFormData(prev => ({ ...prev, team_id: teamsRes.data.teams[0].team_id }));
         }
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -77,166 +69,117 @@ const NewActivity = () => {
         setLoadingLocations(false);
       }
     };
-    
-    if (isAuthenticated) {
-      fetchData();
-    }
+
+    if (isAuthenticated) fetchData();
   }, [isAuthenticated]);
-  
-  // Check for similar activities when location and activity type are selected
+
   useEffect(() => {
-    // Only check when all three values are present
     if (!formData.team_id || !formData.activity_type_id || !formData.location_id) {
       setSimilarActivities([]);
       return;
     }
-    
-    const checkSimilarActivities = async () => {
-      setCheckingSimilar(true);
+
+    const timeoutId = setTimeout(async () => {
       try {
-        const response = await api.get('/activities/check-similar', {
+        setCheckingSimilar(true);
+        const res = await api.get('/activities/check-similar', {
           params: {
             team_id: formData.team_id,
             activity_type_id: formData.activity_type_id,
             location_id: formData.location_id
           }
         });
-        
-        if (response.data.has_similar) {
-          setSimilarActivities(response.data.similar_activities);
-        } else {
-          setSimilarActivities([]);
-        }
+        setSimilarActivities(res.data.has_similar ? res.data.similar_activities : []);
       } catch (err) {
-        console.error('Error checking for similar activities:', err);
+        console.error('Error checking similar activities:', err);
         setSimilarActivities([]);
       } finally {
         setCheckingSimilar(false);
       }
-    };
-    
-    // Add debounce to prevent excessive API calls
-    const timeoutId = setTimeout(checkSimilarActivities, 500);
+    }, 500);
+
     return () => clearTimeout(timeoutId);
   }, [formData.team_id, formData.activity_type_id, formData.location_id]);
 
-  // Check for duplicate titles
   useEffect(() => {
     if (!formData.title || !formData.team_id) return;
-    
-    const checkTitle = async () => {
-      setIsTitleChecking(true);
+
+    const timeoutId = setTimeout(async () => {
       try {
-        const response = await api.get(`/activities/check-title`, {
-          params: {
-            title: formData.title,
-            team_id: formData.team_id
-          }
+        setIsTitleChecking(true);
+        const res = await api.get('/activities/check-title', {
+          params: { title: formData.title, team_id: formData.team_id }
         });
-        setIsTitleUnique(response.data.unique);
+        setIsTitleUnique(res.data.unique);
       } catch (err) {
-        console.error('Error checking title uniqueness:', err);
-        // Default to allowing submission if the check fails
+        console.error('Error checking title:', err);
         setIsTitleUnique(true);
       } finally {
         setIsTitleChecking(false);
       }
-    };
-    
-    // Debounce the API call to avoid too many requests while typing
-    const timeoutId = setTimeout(checkTitle, 500);
+    }, 500);
+
     return () => clearTimeout(timeoutId);
   }, [formData.title, formData.team_id]);
-  
-  // Handle form input changes
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Convert numeric values
-    if (['price', 'min_participants', 'max_participants'].includes(name)) {
-      setFormData({
-        ...formData,
-        [name]: value === '' ? '' : Number(value)
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
-    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: ['price', 'min_participants', 'max_participants'].includes(name)
+        ? value === '' ? '' : Number(value)
+        : value
+    }));
   };
-  
-  // Handle form submission
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate title uniqueness
+
     if (!isTitleUnique) {
-      setError("Please choose a unique activity title.");
+      setError('Please choose a unique activity title.');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Confirm if there are similar activities
       if (similarActivities.length > 0) {
         const confirmed = window.confirm(
-          `We found ${similarActivities.length} similar ${
-            similarActivities.length === 1 ? 'activity' : 'activities'
-          } with the same type and location. Are you sure you want to create a new one?`
+          `We found ${similarActivities.length} similar activity(ies). Do you still want to create this one?`
         );
-        
         if (!confirmed) {
           setLoading(false);
           return;
         }
       }
-      
-      // Create the activity
-      const response = await api.post('/activities', {
+
+      const res = await api.post('/activities', {
         ...formData,
         created_by: user.user_id,
         leader_id: user.user_id
       });
-      
-      console.log('Activity created:', response.data);
+
       setSuccess(true);
-      
-      // Redirect after a short delay
-      setTimeout(() => {
-        navigate(`/activities/${response.data.activity_id}`);
-      }, 2000);
+      setTimeout(() => navigate(`/activities/${res.data.activity_id}`), 2000);
     } catch (err) {
       console.error('Error creating activity:', err);
-      setError(err.response?.data?.error || 'Failed to create activity. Please try again.');
+      setError(err.response?.data?.error || 'Failed to create activity.');
     } finally {
       setLoading(false);
     }
   };
-  
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
-  }
-  
+
+  if (!isAuthenticated) return null;
+
   return (
     <Container className="py-4 activity-form-container">
       <Card className="shadow-sm">
         <Card.Header as="h1" className="text-center">Create New Activity</Card.Header>
         <Card.Body>
-          {success && (
-            <Alert variant="success">
-              Activity created successfully! Redirecting to activity details...
-            </Alert>
-          )}
-          
-          {error && (
-            <Alert variant="danger">
-              {error}
-            </Alert>
-          )}
-          
+          {success && <Alert variant="success">Activity created successfully! Redirecting...</Alert>}
+          {error && <Alert variant="danger">{error}</Alert>}
+
           <Form onSubmit={handleSubmit}>
             <Row>
               <Col md={6}>
@@ -248,7 +191,7 @@ const NewActivity = () => {
                     value={formData.title}
                     onChange={handleChange}
                     required
-                    placeholder="E.g., Mountain Hiking Adventure"
+                    placeholder="E.g., Mountain Hiking"
                     isValid={formData.title && isTitleUnique}
                     isInvalid={formData.title && !isTitleUnique}
                   />
@@ -257,12 +200,12 @@ const NewActivity = () => {
                   )}
                   {!isTitleUnique && (
                     <Form.Control.Feedback type="invalid">
-                      An activity with this name already exists in your team. Please choose a different name.
+                      This title already exists in your team.
                     </Form.Control.Feedback>
                   )}
                 </Form.Group>
               </Col>
-              
+
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Team*</Form.Label>
@@ -274,15 +217,13 @@ const NewActivity = () => {
                   >
                     <option value="">Select Team</option>
                     {teams.map(team => (
-                      <option key={team.team_id} value={team.team_id}>
-                        {team.team_name}
-                      </option>
+                      <option key={team.team_id} value={team.team_id}>{team.team_name}</option>
                     ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
             </Row>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Description*</Form.Label>
               <Form.Control
@@ -292,135 +233,113 @@ const NewActivity = () => {
                 value={formData.description}
                 onChange={handleChange}
                 required
-                placeholder="Provide a detailed description of the activity..."
+                placeholder="Provide a detailed description..."
               />
             </Form.Group>
-            
+
             <Row>
               <Col md={6}>
                 <SearchableDropdown
                   label="Location"
-                  items={locations}
-                  onSelect={(value) => handleChange({ target: { name: 'location_id', value }})}
+                  items={memoizedLocations}
+                  onSelect={value => handleChange({ target: { name: 'location_id', value } })}
                   value={formData.location_id}
                   valueKey="location_id"
                   displayKey="location_name"
                   extraDisplayKeys={['country_code', 'region_code']}
                   placeholder="Search for a location..."
                   isLoading={loadingLocations}
-                  required={true}
+                  required
                   searchKeys={['location_name', 'country_code', 'region_code', 'formatted_address']}
-                  noResultsMessage="No locations found. Try a different search term."
+                  noResultsMessage="No locations found."
                 />
               </Col>
-              
+
               <Col md={6}>
                 <SearchableDropdown
                   label="Activity Type"
-                  items={activityTypes}
-                  onSelect={(value) => handleChange({ target: { name: 'activity_type_id', value }})}
+                  items={memoizedActivityTypes}
+                  onSelect={value => handleChange({ target: { name: 'activity_type_id', value } })}
                   value={formData.activity_type_id}
                   valueKey="activity_type_id"
                   displayKey="activity_type_name"
-                  placeholder="Search for an activity type..."
-                  required={true}
+                  placeholder="Search for activity type..."
+                  required
                   searchKeys={['activity_type_name', 'description']}
-                  noResultsMessage="No activity types found. Try a different search term."
+                  noResultsMessage="No activity types found."
                 />
               </Col>
             </Row>
-            
+
             <Row>
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Price ($)*</Form.Label>
-                  <Form.Control
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    required
-                    placeholder="49.99"
-                  />
-                </Form.Group>
-              </Col>
-              
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Difficulty Level*</Form.Label>
-                  <Form.Select
-                    name="difficulty_level"
-                    value={formData.difficulty_level}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="difficult">Difficult</option>
-                    <option value="extreme">Extreme</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              
-              <Col md={4}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Participant Range*</Form.Label>
-                  <Row>
-                    <Col>
-                      <Form.Control
-                        type="number"
-                        min="1"
-                        max="999"
-                        name="min_participants"
-                        value={formData.min_participants}
-                        onChange={handleChange}
-                        required
-                        placeholder="Min"
-                      />
-                    </Col>
-                    <Col>
-                      <Form.Control
-                        type="number"
-                        min={formData.min_participants || 1}
-                        max="999"
-                        name="max_participants"
-                        value={formData.max_participants}
-                        onChange={handleChange}
-                        required
-                        placeholder="Max"
-                      />
-                    </Col>
-                  </Row>
-                </Form.Group>
-              </Col>
-            </Row>
-            
-            {checkingSimilar ? (
-              <div className="text-center my-3">
-                <Spinner animation="border" size="sm" /> Checking for similar activities...
-              </div>
-            ) : (
-              <SimilarActivityWarning similarActivities={similarActivities} />
+  <Col md={4}>
+    <Form.Group className="mb-3">
+      <Form.Label>Price (USD)*</Form.Label>
+      <Form.Control
+        type="number"
+        name="price"
+        min="0"
+        step="0.01"
+        value={formData.price}
+        onChange={handleChange}
+        required
+      />
+    </Form.Group>
+  </Col>
+
+  <Col md={4}>
+    <Form.Group className="mb-3">
+      <Form.Label>Min Participants*</Form.Label>
+      <Form.Control
+        type="number"
+        name="min_participants"
+        min="1"
+        max={formData.max_participants || 100}
+        value={formData.min_participants}
+        onChange={handleChange}
+        required
+      />
+    </Form.Group>
+  </Col>
+
+  <Col md={4}>
+    <Form.Group className="mb-3">
+      <Form.Label>Max Participants*</Form.Label>
+      <Form.Control
+        type="number"
+        name="max_participants"
+        min={formData.min_participants || 1}
+        value={formData.max_participants}
+        onChange={handleChange}
+        required
+      />
+    </Form.Group>
+  </Col>
+</Row>
+
+<Form.Group className="mb-3">
+  <Form.Label>Difficulty Level*</Form.Label>
+  <Form.Select
+    name="difficulty_level"
+    value={formData.difficulty_level}
+    onChange={handleChange}
+    required
+  >
+    <option value="easy">Easy</option>
+    <option value="moderate">Moderate</option>
+    <option value="hard">Hard</option>
+  </Form.Select>
+</Form.Group>
+
+
+            {checkingSimilar && <p>Checking for similar activities...</p>}
+            {similarActivities.length > 0 && (
+              <SimilarActivityWarning activities={similarActivities} />
             )}
-            
-            <div className="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-              <Button 
-                variant="secondary" 
-                className="me-md-2"
-                onClick={() => navigate(-1)}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
+
+            <div className="d-flex justify-content-end mt-4">
               <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Spinner as="span" animation="border" size="sm" className="me-2" />
-                    Creating...
-                  </>
-                ) : 'Create Activity'}
+                {loading ? <Spinner animation="border" size="sm" /> : 'Create Activity'}
               </Button>
             </div>
           </Form>

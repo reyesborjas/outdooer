@@ -1,38 +1,62 @@
 /* src/styles/SearchableDropdown.css */
 .searchable-dropdown {
-    position: relative;
-    margin-bottom: 1rem;
-  }
-  
-  .searchable-dropdown .dropdown-list {
-    position: absolute;
-    width: 100%;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border: 1px solid #ced4da;
-    border-radius: 0.25rem;
-    margin-top: 0.25rem;
-  }
-  
-  .searchable-dropdown .list-group-item {
-    cursor: pointer;
-    padding: 0.5rem 1rem;
-  }
-  
-  .searchable-dropdown .list-group-item:hover {
-    background-color: #f8f9fa;
-  }
-  
-  .searchable-dropdown .list-group-item.active {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: white;
-  }
-  
-  .searchable-dropdown .no-results {
-    text-align: center;
-    font-style: italic;
-    color: #6c757d;
-  }
+  position: relative;
+}
+
+.searchable-dropdown .input-group {
+  position: relative;
+}
+
+.searchable-dropdown .form-control {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  z-index: 2;
+  background: transparent;
+  visibility: transparent;
+
+}
+
+.searchable-dropdown .selected-value-display {
+  width: 100%;
+  background-color: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+  height: 38px;
+  padding: 0.375rem 0.75rem;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #495057;
+}
+
+.searchable-dropdown .form-control:focus + .selected-value-display {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  z-index: 3;
+  background: white;
+}
+
+.searchable-dropdown .dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.searchable-dropdown .dropdown-item.active,
+.searchable-dropdown .dropdown-item:active {
+  background-color: #0d6efd;
+  color: white;
+}
+
+.searchable-dropdown .dropdown-item {
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.searchable-dropdown .form-control:focus {
+  z-index: 3;
+  background: white;
+}
