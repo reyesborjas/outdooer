@@ -27,7 +27,7 @@ function App() {
       <AuthProvider>
         <div className="app-container">
           <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
-          <main className="main-content">
+          <main className={`main-content ${sidebarOpen ? 'sidebar-open' : ''}`}>
             <Router />
           </main>
         </div>

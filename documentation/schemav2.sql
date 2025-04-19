@@ -36,6 +36,15 @@ CREATE TABLE ProfileVisibilitySettings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+ CREATE TABLE new_feature (
+       id SERIAL PRIMARY KEY,
+       name VARCHAR(255) NOT NULL,
+       description TEXT NOT NULL,
+       created_by INTEGER REFERENCES users(user_id),
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+   );
+
 -- User Roles (Explorer, Guide, Admin)
 CREATE TABLE UserRoles (
     user_role_id SERIAL PRIMARY KEY,
