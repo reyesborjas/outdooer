@@ -30,11 +30,26 @@ def get_activity_by_id(activity_id):
         return jsonify({'error': 'Failed to fetch activity details'}), 500
 
 def get_activities_by_user(user_id=None):
-    """Get activities created by a specific user or the current user"""
+    """Get activities created by a specific user or the current user's team"""
     try:
         if user_id is None:
-            user_id = get_jwt_identity()
-        activities = Activity.query.filter_by(created_by=user_id).all()
+            user_id = get_jwt_identity()  # Obtener el ID del usuario desde el JWT
+
+        # Obtener el equipo del usuario
+        user_team = Team.query.filter_by(master_guide_id=user_id).first()
+        user_team_id = user_team.team_id if user_team else None
+
+        # Obtener actividades creadas por el usuario o por su equipo
+        activities = Activity.query.filter(
+            (Activity.created_by == user_id) | 
+            (Activity.team_id == user_team_id) | 
+            (Activity.leader_id == user_id)  # Incluir actividades donde el usuario es líder
+        ).all()
+
+        print(f"Found {len(activities)} activities for user {user_id}.")
+        for activity in activities:
+            print(f"Activity: {activity.to_dict()}")
+
         activities_list = [activity.to_dict() for activity in activities]
         return jsonify({'activities': activities_list}), 200
     except Exception as e:

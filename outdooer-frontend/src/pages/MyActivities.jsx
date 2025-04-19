@@ -43,7 +43,7 @@ const MyActivities = () => {
         console.log('Is array?', Array.isArray(response.data));
         
         // The problem might be here - what is the structure of response.data?
-        setActivities(response.data || []);
+        setActivities(response.data.activities || []);
       } catch (err) {
         console.error('Error fetching activities:', err);
         setError('Failed to load your activities. Please try again.');

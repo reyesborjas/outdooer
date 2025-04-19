@@ -1,7 +1,7 @@
 # app/models/activity.py
 from app import db
 from datetime import datetime
-from app.models.location import Location  # Import is used for the relationship
+
 
 class Activity(db.Model):
     __tablename__ = 'activities'

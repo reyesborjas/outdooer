@@ -138,56 +138,43 @@ const NewActivity = () => {
   };
 
   // Fixed handleSubmit function for your NewActivity.jsx component
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  if (!isTitleUnique) {
-    setError('Please choose a unique activity title.');
-    return;
-  }
-
-  setLoading(true);
-  setError(null);
-
-  try {
-    // Check for similar activities confirmation
-    if (similarActivities.length > 0) {
-      const confirmed = window.confirm(
-        `We found ${similarActivities.length} similar activity(ies). Do you still want to create this one?`
-      );
-      if (!confirmed) {
-        setLoading(false);
-        return;
-      }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
+    if (!isTitleUnique) {
+      setError('Please choose a unique activity title.');
+      return;
     }
-
-    // Make sure to use the trailing slash to match the server's expectations
-    const res = await api.post('activities/', {
-      ...formData,
-      created_by: user.user_id,
-      leader_id: user.user_id
-    });
-
-    console.log('Activity created successfully:', res.data);
-    
-    // Clear loading state before changing route
-    setLoading(false);
-    
-    // Set success state
-    setSuccess(true);
-    
-    // Use window.location for more reliable navigation
-    // This is more direct and bypasses potential React Router issues
-    setTimeout(() => {
-      window.location.href = `/activities/${res.data.activity_id}`;
-    }, 1000); // Short delay to ensure state updates are processed
-
-  } catch (err) {
-    console.error('Error creating activity:', err);
-    setError(err.response?.data?.error || 'Failed to create activity.');
-    setLoading(false);
-  }
-};
+  
+    setLoading(true);
+    setError(null);
+  
+    try {
+      // Create full payload with all required fields
+      const payload = {
+        ...formData,
+        created_by: user.user_id,
+        leader_id: formData.leader_id || user.user_id,
+        activity_type_id: formData.activity_type_id,
+      };
+  
+      console.log('Sending data to server:', payload);
+      
+      const res = await api.post('/api/activities/', payload);
+  
+      console.log('Activity created successfully:', res.data);
+      setLoading(false);
+      setSuccess(true);
+      
+      setTimeout(() => {
+        navigate(`/activities/${res.data.activity_id}`);
+      }, 1000);
+    } catch (err) {
+      console.error('Error creating activity:', err);
+      setError(err.response?.data?.error || 'Failed to create activity.');
+      setLoading(false);
+    }
+  };
 
 // Also add this to your form:
 <div className="d-flex justify-content-between mt-4">
@@ -217,6 +204,34 @@ const handleSubmit = async (e) => {
   };
 
   if (!isAuthenticated) return null;
+
+  // Add these state variables
+const [teamMembers, setTeamMembers] = useState([]);
+const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
+
+// Add this effect to fetch team members when a team is selected
+useEffect(() => {
+  const fetchTeamMembers = async () => {
+    if (!formData.team_id) {
+      setTeamMembers([]);
+      return;
+    }
+    
+    try {
+      setLoadingTeamMembers(true);
+      const res = await api.get(`/api/teams/${formData.team_id}/members`);
+      setTeamMembers(res.data.members || []);
+    } catch (err) {
+      console.error('Error fetching team members:', err);
+    } finally {
+      setLoadingTeamMembers(false);
+    }
+  };
+  
+  if (formData.team_id) {
+    fetchTeamMembers();
+  }
+}, [formData.team_id]);
 
   return (
     <Container className="py-4 activity-form-container">
@@ -385,7 +400,33 @@ const handleSubmit = async (e) => {
                 <option value="hard">Hard</option>
               </Form.Select>
             </Form.Group>
-
+            <Form.Group className="mb-3">
+  <Form.Label>Activity Leader*</Form.Label>
+  <Form.Select
+    name="leader_id"
+    value={formData.leader_id || user.user_id}
+    onChange={handleChange}
+    required
+    disabled={loadingTeamMembers}
+  >
+    <option value={user.user_id}>Me (Default)</option>
+    {teamMembers
+      .filter(member => member.user_id !== user.user_id)
+      .map(member => (
+        <option key={member.user_id} value={member.user_id}>
+          {member.first_name} {member.last_name} - {
+            member.role_level === 1 ? 'Master Guide' :
+            member.role_level === 2 ? 'Tactical Guide' :
+            member.role_level === 3 ? 'Technical Guide' : 'Base Guide'
+          }
+        </option>
+      ))}
+  </Form.Select>
+  {loadingTeamMembers && <Form.Text>Loading team members...</Form.Text>}
+  <Form.Text className="text-muted">
+    Select who will lead this activity.
+  </Form.Text>
+</Form.Group>
             {checkingSimilar && <p>Checking for similar activities...</p>}
             {similarActivities.length > 0 && (
               <SimilarActivityWarning activities={similarActivities} />
