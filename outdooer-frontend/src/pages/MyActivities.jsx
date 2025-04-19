@@ -1,11 +1,9 @@
 // src/pages/MyActivities.jsx
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Badge, Button, Form, Spinner, Alert, 
-         Tab, Tabs, Dropdown, Modal } from 'react-bootstrap';
+import React, { useState, useEffect, useContext } from 'react';
+import { Container, Row, Col, Card, Badge, Button, Spinner, Alert, Tabs, Tab, Table } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { FaEdit, FaEye, FaCalendarAlt, FaTrashAlt } from 'react-icons/fa';
+import { FaEdit, FaEye, FaCalendarAlt, FaTrash } from 'react-icons/fa';
 import api from '../api';
 import '../styles/MyActivities.css';
 
@@ -13,44 +11,39 @@ const MyActivities = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isGuide } = useContext(AuthContext);
   
-  // Activities state
-  const [createdActivities, setCreatedActivities] = useState([]);
-  const [ledActivities, setLedActivities] = useState([]);
-  const [activeTab, setActiveTab] = useState('created');
-  
-  // UI state
+  const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('active');
   
-  // Delete confirmation modal
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [activityToDelete, setActivityToDelete] = useState(null);
-  
-  // Check if user is authorized to access this page
+  // On component mount, check if user is authenticated and is a guide
   useEffect(() => {
-    if (!isAuthenticated || !isGuide()) {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
+    if (!isGuide()) {
       navigate('/unauthorized');
+      return;
     }
   }, [isAuthenticated, isGuide, navigate]);
   
   // Fetch user's activities
   useEffect(() => {
-    const fetchActivities = async () => {
-      if (!isAuthenticated || !user?.user_id) return;
-      
-      setLoading(true);
-      setError(null);
-      
+    const fetchMyActivities = async () => {
       try {
-        // Fetch activities created by the user
-        const createdResponse = await api.get(`/activities/created-by/${user.user_id}`);
-        setCreatedActivities(createdResponse.data.activities || []);
+        setLoading(true);
+        const response = await api.get('/activities/my-activities');
         
-        // Fetch activities led by the user
-        const ledResponse = await api.get(`/activities/led-by/${user.user_id}`);
-        setLedActivities(ledResponse.data.activities || []);
+        // Debug logs
+        console.log('Full response:', response);
+        console.log('Response data:', response.data);
+        console.log('Data type:', typeof response.data);
+        console.log('Is array?', Array.isArray(response.data));
+        
+        // The problem might be here - what is the structure of response.data?
+        setActivities(response.data || []);
       } catch (err) {
         console.error('Error fetching activities:', err);
         setError('Failed to load your activities. Please try again.');
@@ -59,85 +52,86 @@ const MyActivities = () => {
       }
     };
     
-    fetchActivities();
-  }, [isAuthenticated, user]);
+    if (isAuthenticated && isGuide()) {
+      fetchMyActivities();
+    }
+  }, [isAuthenticated, isGuide]);
   
-  // Filter activities based on search term and status filter
-  const filterActivities = (activities) => {
-    return activities.filter(activity => {
-      const matchesSearch = (
-        activity.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        (activity.description && activity.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (activity.location_name && activity.location_name.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-      
-      const matchesStatus = statusFilter === 'all' || activity.activity_status === statusFilter;
-      
-      return matchesSearch && matchesStatus;
-    });
-  };
-  
-  // Get filtered activities based on active tab
-  const getFilteredActivities = () => {
-    const activities = activeTab === 'created' ? createdActivities : ledActivities;
-    return filterActivities(activities);
-  };
+  // Filter activities based on selected tab
+  const filteredActivities = activities.filter(activity => {
+    if (activeTab === 'active') {
+      return activity.activity_status === 'active';
+    } else if (activeTab === 'draft') {
+      return activity.activity_status === 'draft';
+    } else if (activeTab === 'completed') {
+      return activity.activity_status === 'completed';
+    } else if (activeTab === 'canceled') {
+      return activity.activity_status === 'canceled';
+    }
+    return true; // All tab
+  });
   
   // Format price with currency
   const formatPrice = (price) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
-    }).format(price || 0);
+    }).format(price);
   };
   
-  // Handle activity deletion confirmation
-  const confirmDeleteActivity = (activity) => {
-    setActivityToDelete(activity);
-    setShowDeleteModal(true);
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
   };
   
-  // Handle actual activity deletion
-  const deleteActivity = async () => {
-    if (!activityToDelete) return;
-    
-    try {
-      await api.delete(`/activities/${activityToDelete.activity_id}`);
-      
-      // Update the activities lists
-      setCreatedActivities(createdActivities.filter(
-        activity => activity.activity_id !== activityToDelete.activity_id
-      ));
-      
-      setLedActivities(ledActivities.filter(
-        activity => activity.activity_id !== activityToDelete.activity_id
-      ));
-      
-      setShowDeleteModal(false);
-      setActivityToDelete(null);
-    } catch (err) {
-      console.error('Error deleting activity:', err);
-      setError('Failed to delete activity. Please try again.');
+  // Handle edit action
+  const handleEdit = (activityId) => {
+    navigate(`/activities/${activityId}/edit`);
+  };
+  
+  // Handle view action
+  const handleView = (activityId) => {
+    navigate(`/activities/${activityId}`);
+  };
+  
+  // Handle manage dates action
+  const handleManageDates = (activityId) => {
+    navigate(`/activities/${activityId}/dates`);
+  };
+  
+  // Handle delete action
+  const handleDelete = async (activityId) => {
+    if (window.confirm('Are you sure you want to delete this activity? This action cannot be undone.')) {
+      try {
+        await api.delete(`/activities/${activityId}`);
+        // Remove the deleted activity from the state
+        setActivities(activities.filter(a => a.activity_id !== activityId));
+      } catch (err) {
+        console.error('Error deleting activity:', err);
+        setError('Failed to delete activity. Please try again.');
+      }
     }
   };
   
-  // Get appropriate status badge color
+  // Get status badge variant
   const getStatusBadgeVariant = (status) => {
     switch (status) {
       case 'active':
         return 'success';
       case 'draft':
         return 'secondary';
-      case 'canceled':
-        return 'danger';
       case 'completed':
         return 'info';
+      case 'canceled':
+        return 'danger';
       default:
         return 'secondary';
     }
   };
   
-  // Get appropriate difficulty badge color
+  // Get difficulty badge variant
   const getDifficultyBadgeVariant = (difficulty) => {
     if (!difficulty) return 'secondary';
     
@@ -145,10 +139,8 @@ const MyActivities = () => {
       case 'easy':
         return 'success';
       case 'moderate':
-      case 'medium':
         return 'warning';
       case 'difficult':
-      case 'hard':
       case 'extreme':
         return 'danger';
       default:
@@ -156,268 +148,140 @@ const MyActivities = () => {
     }
   };
   
-  // Handle navigation to edit activity
-  const handleEditActivity = (activityId) => {
-    navigate(`/edit-activity/${activityId}`);
-  };
-  
-  // Handle navigation to view activity details
-  const handleViewActivity = (activityId) => {
-    navigate(`/activities/${activityId}`);
-  };
-  
-  // Handle navigation to manage activity dates
-  const handleManageDates = (activityId) => {
-    navigate(`/activity-dates/${activityId}`);
-  };
-  
-  if (!isAuthenticated) {
-    return null; // Will redirect in useEffect
+  if (loading) {
+    return (
+      <Container className="py-4 text-center">
+        <Spinner animation="border" role="status" />
+        <p className="mt-3">Loading your activities...</p>
+      </Container>
+    );
   }
   
   return (
     <Container className="py-4 my-activities-container">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>My Activities</h1>
-        <Button 
-          variant="primary" 
-          onClick={() => navigate('/create-activity')}
-        >
-          Create New Activity
-        </Button>
-      </div>
-      
-      {/* Search and filter section */}
-      <Card className="mb-4 filter-card">
-        <Card.Body>
-          <Row>
-            <Col md={8}>
-              <Form.Group>
-                <Form.Label>Search Activities</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="Search by name, description, or location..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={4}>
-              <Form.Group>
-                <Form.Label>Filter by Status</Form.Label>
-                <Form.Select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="active">Active</option>
-                  <option value="draft">Draft</option>
-                  <option value="canceled">Canceled</option>
-                  <option value="completed">Completed</option>
-                </Form.Select>
-              </Form.Group>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+      <Row className="mb-4">
+        <Col>
+          <h1>My Activities</h1>
+          <p className="text-muted">
+            Manage the activities you've created
+          </p>
+        </Col>
+        <Col xs="auto" className="d-flex align-items-center">
+          <Button 
+            variant="primary" 
+            onClick={() => navigate('/activities/new')}
+          >
+            Create New Activity
+          </Button>
+        </Col>
+      </Row>
       
       {error && (
-        <Alert variant="danger" className="mb-4">
+        <Alert variant="danger" dismissible onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
       
-      {/* Tabs for created vs led activities */}
-      <Tabs
-        activeKey={activeTab}
-        onSelect={(k) => setActiveTab(k)}
-        className="mb-4"
-      >
-        <Tab eventKey="created" title={`Activities I Created (${createdActivities.length})`}>
-          {loading ? (
-            <div className="text-center my-5">
-              <Spinner animation="border" variant="primary" />
-              <p className="mt-3">Loading your activities...</p>
-            </div>
-          ) : getFilteredActivities().length > 0 ? (
-            <Row className="g-4">
-              {getFilteredActivities().map((activity) => (
-                <Col key={activity.activity_id} md={6} lg={4}>
-                  <Card className="h-100 activity-card">
-                    <Card.Header className="d-flex justify-content-between align-items-center">
-                      <Badge bg={getStatusBadgeVariant(activity.activity_status)}>
-                        {activity.activity_status?.charAt(0).toUpperCase() + activity.activity_status?.slice(1) || 'Unknown'}
-                      </Badge>
-                      <Dropdown align="end">
-                        <Dropdown.Toggle variant="light" size="sm" id={`dropdown-${activity.activity_id}`}>
-                          Actions
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu>
-                          <Dropdown.Item onClick={() => handleViewActivity(activity.activity_id)}>
-                            <FaEye className="me-2" /> View Details
-                          </Dropdown.Item>
-                          <Dropdown.Item onClick={() => handleEditActivity(activity.activity_id)}>
-                            <FaEdit className="me-2" /> Edit Activity
-                          </Dropdown.Item>
-                          <Dropdown.Item onClick={() => handleManageDates(activity.activity_id)}>
-                            <FaCalendarAlt className="me-2" /> Manage Dates
-                          </Dropdown.Item>
-                          <Dropdown.Divider />
-                          <Dropdown.Item 
-                            className="text-danger"
-                            onClick={() => confirmDeleteActivity(activity)}
+      <Card className="shadow-sm">
+        <Card.Body>
+          <Tabs
+            activeKey={activeTab}
+            onSelect={(k) => setActiveTab(k)}
+            className="mb-4"
+          >
+            <Tab eventKey="active" title={`Active (${activities.filter(a => a.activity_status === 'active').length})`} />
+            <Tab eventKey="draft" title={`Draft (${activities.filter(a => a.activity_status === 'draft').length})`} />
+            <Tab eventKey="completed" title={`Completed (${activities.filter(a => a.activity_status === 'completed').length})`} />
+            <Tab eventKey="canceled" title={`Canceled (${activities.filter(a => a.activity_status === 'canceled').length})`} />
+            <Tab eventKey="all" title={`All (${activities.length})`} />
+          </Tabs>
+          
+          {filteredActivities.length === 0 ? (
+            <Alert variant="info">
+              {activeTab === 'all' 
+                ? "You haven't created any activities yet." 
+                : `You don't have any ${activeTab} activities.`}
+            </Alert>
+          ) : (
+            <div className="table-responsive">
+              <Table striped hover className="activities-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Location</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                    <th>Difficulty</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredActivities.map(activity => (
+                    <tr key={activity.activity_id}>
+                      <td className="title-cell">{activity.title}</td>
+                      <td>{activity.location_name || 'N/A'}</td>
+                      <td>{activity.activity_type_name || 'N/A'}</td>
+                      <td>{formatPrice(activity.price)}</td>
+                      <td>
+                        <Badge bg={getDifficultyBadgeVariant(activity.difficulty_level)}>
+                          {activity.difficulty_level || 'N/A'}
+                        </Badge>
+                      </td>
+                      <td>
+                        <Badge bg={getStatusBadgeVariant(activity.activity_status)}>
+                          {activity.activity_status}
+                        </Badge>
+                      </td>
+                      <td>{formatDate(activity.created_at)}</td>
+                      <td>
+                        <div className="d-flex action-buttons">
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            title="View Details"
+                            onClick={() => handleView(activity.activity_id)}
+                            className="me-1"
                           >
-                            <FaTrashAlt className="me-2" /> Delete Activity
-                          </Dropdown.Item>
-                        </Dropdown.Menu>
-                      </Dropdown>
-                    </Card.Header>
-                    <Card.Body>
-                      <Card.Title>{activity.title}</Card.Title>
-                      <Card.Subtitle className="mb-2 text-muted">
-                        <i className="bi bi-geo-alt"></i> {activity.location_name || 'Location not specified'}
-                      </Card.Subtitle>
-                      <div className="d-flex justify-content-between mb-2">
-                        <Badge bg={getDifficultyBadgeVariant(activity.difficulty_level)}>
-                          {activity.difficulty_level || 'Difficulty not specified'}
-                        </Badge>
-                        <div className="price">
-                          {formatPrice(activity.price)}
+                            <FaEye />
+                          </Button>
+                          <Button 
+                            variant="outline-secondary" 
+                            size="sm" 
+                            title="Edit Activity"
+                            onClick={() => handleEdit(activity.activity_id)}
+                            className="me-1"
+                          >
+                            <FaEdit />
+                          </Button>
+                          <Button 
+                            variant="outline-info" 
+                            size="sm" 
+                            title="Manage Dates"
+                            onClick={() => handleManageDates(activity.activity_id)}
+                            className="me-1"
+                          >
+                            <FaCalendarAlt />
+                          </Button>
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm"
+                            title="Delete Activity"
+                            onClick={() => handleDelete(activity.activity_id)}
+                          >
+                            <FaTrash />
+                          </Button>
                         </div>
-                      </div>
-                      <Card.Text className="activity-description">
-                        {activity.description || 'No description available.'}
-                      </Card.Text>
-                    </Card.Body>
-                    <Card.Footer className="bg-transparent d-flex justify-content-between">
-                      <div className="text-muted small">
-                        <strong>Created:</strong> {new Date(activity.created_at).toLocaleDateString()}
-                      </div>
-                      <div className="text-primary small">
-                        <strong>Reservations:</strong> {activity.reservation_count || 0}
-                      </div>
-                    </Card.Footer>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          ) : (
-            <Alert variant="info" className="text-center">
-              <p className="mb-0">No activities found matching your criteria.</p>
-              {searchTerm || statusFilter !== 'all' ? (
-                <p className="mt-2">Try adjusting your search filters.</p>
-              ) : (
-                <div className="mt-3">
-                  <p>You haven't created any activities yet.</p>
-                  <Button 
-                    variant="primary" 
-                    onClick={() => navigate('/create-activity')}
-                  >
-                    Create Your First Activity
-                  </Button>
-                </div>
-              )}
-            </Alert>
-          )}
-        </Tab>
-        
-        <Tab eventKey="led" title={`Activities I Lead (${ledActivities.length})`}>
-          {loading ? (
-            <div className="text-center my-5">
-              <Spinner animation="border" variant="primary" />
-              <p className="mt-3">Loading your activities...</p>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
             </div>
-          ) : getFilteredActivities().length > 0 ? (
-            <Row className="g-4">
-              {getFilteredActivities().map((activity) => (
-                <Col key={activity.activity_id} md={6} lg={4}>
-                  <Card className="h-100 activity-card">
-                    <Card.Header className="d-flex justify-content-between align-items-center">
-                      <Badge bg={getStatusBadgeVariant(activity.activity_status)}>
-                        {activity.activity_status?.charAt(0).toUpperCase() + activity.activity_status?.slice(1) || 'Unknown'}
-                      </Badge>
-                      <Dropdown align="end">
-                        <Dropdown.Toggle variant="light" size="sm" id={`dropdown-${activity.activity_id}`}>
-                          Actions
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu>
-                          <Dropdown.Item onClick={() => handleViewActivity(activity.activity_id)}>
-                            <FaEye className="me-2" /> View Details
-                          </Dropdown.Item>
-                          <Dropdown.Item onClick={() => handleManageDates(activity.activity_id)}>
-                            <FaCalendarAlt className="me-2" /> Manage Dates
-                          </Dropdown.Item>
-                        </Dropdown.Menu>
-                      </Dropdown>
-                    </Card.Header>
-                    <Card.Body>
-                      <Card.Title>{activity.title}</Card.Title>
-                      <Card.Subtitle className="mb-2 text-muted">
-                        <i className="bi bi-geo-alt"></i> {activity.location_name || 'Location not specified'}
-                      </Card.Subtitle>
-                      <div className="d-flex justify-content-between mb-2">
-                        <Badge bg={getDifficultyBadgeVariant(activity.difficulty_level)}>
-                          {activity.difficulty_level || 'Difficulty not specified'}
-                        </Badge>
-                        <div className="price">
-                          {formatPrice(activity.price)}
-                        </div>
-                      </div>
-                      <Card.Text className="activity-description">
-                        {activity.description || 'No description available.'}
-                      </Card.Text>
-                    </Card.Body>
-                    <Card.Footer className="bg-transparent d-flex justify-content-between">
-                      <div className="text-muted small">
-                        <strong>Created by:</strong> {activity.creator_name || 'Unknown'}
-                      </div>
-                      <div className="text-primary small">
-                        <strong>Reservations:</strong> {activity.reservation_count || 0}
-                      </div>
-                    </Card.Footer>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          ) : (
-            <Alert variant="info" className="text-center">
-              <p className="mb-0">No activities found matching your criteria.</p>
-              {searchTerm || statusFilter !== 'all' ? (
-                <p className="mt-2">Try adjusting your search filters.</p>
-              ) : (
-                <p>You aren't the leader for any activities yet.</p>
-              )}
-            </Alert>
           )}
-        </Tab>
-      </Tabs>
-      
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Deletion</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {activityToDelete && (
-            <>
-              <p>Are you sure you want to delete the activity:</p>
-              <p className="fw-bold">{activityToDelete.title}</p>
-              <Alert variant="warning">
-                This action cannot be undone. Deleting this activity will also remove all associated
-                reservations and scheduling information.
-              </Alert>
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={deleteActivity}>
-            Delete Activity
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        </Card.Body>
+      </Card>
     </Container>
   );
 };

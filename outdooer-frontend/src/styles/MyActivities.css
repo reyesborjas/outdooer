@@ -114,3 +114,56 @@
       margin-bottom: 1rem;
     }
   }
+
+  /* src/styles/MyActivities.css */
+.my-activities-container .activities-table {
+  font-size: 0.95rem;
+}
+
+.my-activities-container .title-cell {
+  font-weight: 500;
+  min-width: 200px;
+}
+
+.my-activities-container .action-buttons {
+  white-space: nowrap;
+}
+
+.my-activities-container .table th {
+  background-color: #f8f9fa;
+}
+
+/* src/styles/MyActivities.css */
+.my-activities-container .activities-table {
+  font-size: 0.95rem;
+}
+
+.my-activities-container .title-cell {
+  font-weight: 500;
+  min-width: 200px;
+}
+
+.my-activities-container .action-buttons {
+  white-space: nowrap;
+}
+
+.my-activities-container .table th {
+  background-color: #f8f9fa;
+}
+
+.my-activities-container .table td {
+  vertical-align: middle;
+}
+
+.my-activities-container .action-buttons button {
+  margin-right: 5px;
+}
+
+.my-activities-container .nav-tabs .nav-link {
+  color: #6c757d;
+}
+
+.my-activities-container .nav-tabs .nav-link.active {
+  font-weight: 500;
+  color: #212529;
+}

@@ -3,32 +3,25 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Form, Dropdown, Spinner } from 'react-bootstrap';
 import '../styles/SearchableDropdown.css';
 
-const getFormattedDisplayText = (item, displayKey, extraDisplayKeys = []) => {
+const getFormattedDisplayText = (item, displayKey) => {
   if (!item) return '';
-
-  let display = item[displayKey] || '';
-
-  if (extraDisplayKeys.length > 0) {
-    const extras = extraDisplayKeys
-      .map(key => item[key])
-      .filter(Boolean)
-      .join(', ');
-
-    if (extras) {
-      display = display ? `${display} (${extras})` : extras;
-    }
-  }
-
-  return display || 'Unknown';
+  
+  let display = '';
+  if (item.country_code) display += item.country_code;
+  if (item.region_code) display += display ? ', ' + item.region_code : item.region_code;
+  if (item[displayKey]) display += display ? ', ' + item[displayKey] : item[displayKey];
+  if (item.location_type) display += ` (${item.location_type})`;
+  
+  return display || 'Unknown location';
 };
 
 const SearchableDropdown = ({
   label,
-  items = [],
+  items,
   onSelect,
   value,
-  valueKey = 'id',
-  displayKey = 'name',
+  valueKey,
+  displayKey,
   extraDisplayKeys = [],
   placeholder,
   required = false,
@@ -41,13 +34,17 @@ const SearchableDropdown = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const dropdownRef = useRef(null);
-
-  const selectedItem = items.find(item => item[valueKey] === value);
-  const displayText = selectedItem
-    ? getFormattedDisplayText(selectedItem, displayKey, extraDisplayKeys)
+  
+  // Find the selected item from items based on value
+  const selectedItem = items && items.length > 0 && value 
+    ? items.find(item => item[valueKey] === value) 
+    : null;
+  
+  const displayText = selectedItem 
+    ? getFormattedDisplayText(selectedItem, displayKey)
     : '';
 
-  // Inicializar o resetear lista filtrada
+  // Initialize filtered items
   useEffect(() => {
     if (items && items.length > 0) {
       setFilteredItems(items.slice(0, 20));
@@ -56,7 +53,7 @@ const SearchableDropdown = ({
     }
   }, [items]);
 
-  // Filtro de búsqueda
+  // Filter items when search term changes
   useEffect(() => {
     if (!items || items.length === 0) {
       setFilteredItems([]);
@@ -70,17 +67,31 @@ const SearchableDropdown = ({
 
     const searchTermLower = searchTerm.toLowerCase();
     const filtered = items.filter(item => {
-      const allKeys = [...searchKeys, displayKey, ...extraDisplayKeys];
-      return allKeys.some(key => {
-        const val = item[key];
-        return val && String(val).toLowerCase().includes(searchTermLower);
+      // Search through specified keys
+      if (searchKeys && searchKeys.length > 0) {
+        return searchKeys.some(key => {
+          const value = item[key];
+          return value && String(value).toLowerCase().includes(searchTermLower);
+        });
+      }
+
+      // Search through display key
+      const displayValue = item[displayKey];
+      if (displayValue && String(displayValue).toLowerCase().includes(searchTermLower)) {
+        return true;
+      }
+
+      // Search through extra display keys
+      return extraDisplayKeys.some(key => {
+        const value = item[key];
+        return value && String(value).toLowerCase().includes(searchTermLower);
       });
     });
 
     setFilteredItems(filtered.slice(0, 20));
   }, [searchTerm, items, displayKey, extraDisplayKeys, searchKeys]);
 
-  // Cerrar al hacer clic fuera
+  // Handle clicks outside the dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -91,7 +102,9 @@ const SearchableDropdown = ({
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleSelect = (item) => {
@@ -111,6 +124,7 @@ const SearchableDropdown = ({
       <Form.Label>{label}{required && <span className="text-danger">*</span>}</Form.Label>
       
       <div className="dropdown-container">
+        {/* Only show the search input when in search mode */}
         {isSearchMode ? (
           <Form.Control
             type="text"
@@ -124,6 +138,7 @@ const SearchableDropdown = ({
             autoComplete="off"
           />
         ) : (
+          /* Display element that looks like an input but shows selected value */
           <div 
             className="form-control dropdown-display"
             onClick={handleFocus}
@@ -132,6 +147,7 @@ const SearchableDropdown = ({
           </div>
         )}
 
+        {/* Dropdown menu */}
         <Dropdown show={isOpen} className="w-100">
           <Dropdown.Menu className="w-100">
             {isLoading ? (
@@ -140,12 +156,12 @@ const SearchableDropdown = ({
               </div>
             ) : filteredItems.length > 0 ? (
               filteredItems.map((item, index) => (
-                <Dropdown.Item
+                <Dropdown.Item 
                   key={`${item[valueKey] || 'item'}-${index}`}
                   onClick={() => handleSelect(item)}
                   active={value === item[valueKey]}
                 >
-                  {getFormattedDisplayText(item, displayKey, extraDisplayKeys)}
+                  {getFormattedDisplayText(item, displayKey)}
                 </Dropdown.Item>
               ))
             ) : (
@@ -155,7 +171,12 @@ const SearchableDropdown = ({
         </Dropdown>
       </div>
 
-      <Form.Control type="hidden" value={value || ''} required={required} />
+      {/* Hidden form control for validation */}
+      <Form.Control 
+        type="hidden" 
+        value={value || ''} 
+        required={required} 
+      />
     </Form.Group>
   );
 };

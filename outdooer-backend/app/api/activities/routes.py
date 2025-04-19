@@ -1,8 +1,10 @@
+# app/api/activities/routes.py
 from flask import jsonify, request
 from . import activities_bp
 from app.models.activity import Activity, find_similar_activities
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
+from flask import jsonify, request
 
 @activities_bp.route('/', methods=['GET'])
 def get_all_activities():
@@ -106,3 +108,19 @@ def update_activity(activity_id):
     """Update an existing activity"""
     from .controllers import update_activity as update_activity_controller
     return update_activity_controller(activity_id)
+
+# app/api/activities/routes.py
+@activities_bp.route('/my-activities', methods=['GET'])
+@jwt_required()
+def get_my_activities():
+    """Get activities created by the current user"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Query activities created by the user
+        activities = Activity.query.filter_by(created_by=current_user_id).all()
+        
+        # Return activities as JSON
+        return jsonify([activity.to_dict() for activity in activities]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
