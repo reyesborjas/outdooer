@@ -221,7 +221,7 @@ useEffect(() => {
     
     try {
       setLoadingTeamMembers(true);
-      const res = await api.get(`/api/teams/${formData.team_id}/members`);
+      const res = await api.get(`/teams/${formData.team_id}/members`);
       setTeamMembers(res.data.members || []);
     } catch (err) {
       console.error('Error fetching team members:', err);

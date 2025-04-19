@@ -112,7 +112,7 @@ const EditActivity = () => {
     
     try {
       setLoadingTeamMembers(true);
-      const response = await fetch(`/api/teams/${teamId}/members`);
+      const response = await fetch(`/teams/${teamId}/members`);
       const data = await response.json();
       setTeamMembers(data.members || []);
     } catch (err) {

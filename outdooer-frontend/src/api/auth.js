@@ -5,6 +5,7 @@ export const authApi = {
   login: async (credentials) => {
     try {
       const response = await api.post('/auth/login', credentials);
+      localStorage.setItem('token', response.data.access_token);
       return response.data;
     } catch (error) {
       console.error('Login error:', error.response?.data || error.message);
