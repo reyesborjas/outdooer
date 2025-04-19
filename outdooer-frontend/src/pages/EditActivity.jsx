@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { Container, Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import api from '../api';
+import { activitiesApi } from '../api/activities';
 import '../styles/ActivityForm.css';
 import SearchableDropdown from '../components/SearchableDropdown';
 import SimilarActivityWarning from '../components/SimilarActivityWarning';
@@ -11,7 +11,7 @@ import SimilarActivityWarning from '../components/SimilarActivityWarning';
 const EditActivity = () => {
   const { activityId } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isGuide } = useContext(AuthContext);
+  const { user, isAuthenticated, isGuide, canEditActivity } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -23,18 +23,21 @@ const EditActivity = () => {
     max_participants: 10,
     activity_type_id: '',
     team_id: '',
-    activity_status: 'active'
+    activity_status: 'active',
+    leader_id: ''
   });
 
   const [originalTitle, setOriginalTitle] = useState('');
+  const [originalActivity, setOriginalActivity] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetchingActivity, setFetchingActivity] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [locations, setLocations] = useState([]);
   const [activityTypes, setActivityTypes] = useState([]);
-  const [teams, setTeams] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
   const [similarActivities, setSimilarActivities] = useState([]);
   const [checkingSimilar, setCheckingSimilar] = useState(false);
   const [isTitleUnique, setIsTitleUnique] = useState(true);
@@ -57,32 +60,39 @@ const EditActivity = () => {
     const fetchActivity = async () => {
       try {
         setFetchingActivity(true);
-        const response = await api.get(`/activities/${activityId}`);
-        const activityData = response.data.activity || response.data;
+        const response = await activitiesApi.getActivityById(activityId);
+        const activityData = response.activity || response;
+        
+        setOriginalActivity(activityData);
         
         // Check if user is authorized to edit this activity
-        if (user.user_id === activityData.created_by || user.user_id === activityData.leader_id) {
-          setIsAuthorized(true);
-          
-          // Set form data
-          setFormData({
-            title: activityData.title,
-            description: activityData.description,
-            location_id: activityData.location_id,
-            difficulty_level: activityData.difficulty_level,
-            price: parseFloat(activityData.price),
-            min_participants: activityData.min_participants,
-            max_participants: activityData.max_participants,
-            activity_type_id: activityData.activity_type_id,
-            team_id: activityData.team_id,
-            activity_status: activityData.activity_status
-          });
-          
-          setOriginalTitle(activityData.title);
-        } else {
-          setError("You don't have permission to edit this activity");
-          setIsAuthorized(false);
+        const canEdit = canEditActivity(activityData);
+        setIsAuthorized(canEdit);
+        
+        if (!canEdit) {
+          setError("You don't have permission to edit this activity based on your role level");
+          return;
         }
+        
+        // Set form data
+        setFormData({
+          title: activityData.title,
+          description: activityData.description,
+          location_id: activityData.location_id,
+          difficulty_level: activityData.difficulty_level,
+          price: parseFloat(activityData.price),
+          min_participants: activityData.min_participants,
+          max_participants: activityData.max_participants,
+          activity_type_id: activityData.activity_type_id,
+          team_id: activityData.team_id,
+          activity_status: activityData.activity_status,
+          leader_id: activityData.leader_id
+        });
+        
+        setOriginalTitle(activityData.title);
+        
+        // Fetch team members for this team
+        fetchTeamMembers(activityData.team_id);
       } catch (err) {
         console.error('Error fetching activity:', err);
         setError('Failed to fetch activity data. Please try again.');
@@ -94,22 +104,39 @@ const EditActivity = () => {
     if (isAuthenticated && activityId) {
       fetchActivity();
     }
-  }, [isAuthenticated, activityId, user?.user_id]);
+  }, [isAuthenticated, activityId, canEditActivity]);
+
+  // Fetch team members for leader selection
+  const fetchTeamMembers = async (teamId) => {
+    if (!teamId) return;
+    
+    try {
+      setLoadingTeamMembers(true);
+      const response = await fetch(`/api/teams/${teamId}/members`);
+      const data = await response.json();
+      setTeamMembers(data.members || []);
+    } catch (err) {
+      console.error('Error fetching team members:', err);
+    } finally {
+      setLoadingTeamMembers(false);
+    }
+  };
 
   // Fetch necessary data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoadingLocations(true);
-        const [locationsRes, typesRes, teamsRes] = await Promise.all([
-          api.get('/locations'),
-          api.get('/activity-types'),
-          api.get('/teams/my-teams')
+        const [locationsRes, typesRes] = await Promise.all([
+          fetch('/api/locations'),
+          fetch('/api/activity-types')
         ]);
 
-        setLocations(locationsRes.data.locations || []);
-        setActivityTypes(typesRes.data.activity_types || []);
-        setTeams(teamsRes.data.teams || []);
+        const locationsData = await locationsRes.json();
+        const typesData = await typesRes.json();
+
+        setLocations(locationsData.locations || []);
+        setActivityTypes(typesData.activity_types || []);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load necessary data. Please try again.');
@@ -131,15 +158,13 @@ const EditActivity = () => {
     const timeoutId = setTimeout(async () => {
       try {
         setCheckingSimilar(true);
-        const res = await api.get('/activities/check-similar', {
-          params: {
-            team_id: formData.team_id,
-            activity_type_id: formData.activity_type_id,
-            location_id: formData.location_id,
-            activity_id: activityId // Exclude current activity
-          }
-        });
-        setSimilarActivities(res.data.has_similar ? res.data.similar_activities : []);
+        const result = await activitiesApi.checkSimilarActivities(
+          formData.team_id,
+          formData.activity_type_id,
+          formData.location_id,
+          activityId // Exclude current activity
+        );
+        setSimilarActivities(result.has_similar ? result.similar_activities : []);
       } catch (err) {
         console.error('Error checking similar activities:', err);
         setSimilarActivities([]);
@@ -161,14 +186,12 @@ const EditActivity = () => {
     const timeoutId = setTimeout(async () => {
       try {
         setIsTitleChecking(true);
-        const res = await api.get('/activities/check-title', {
-          params: { 
-            title: formData.title, 
-            team_id: formData.team_id,
-            activity_id: activityId // Exclude current activity
-          }
-        });
-        setIsTitleUnique(res.data.unique);
+        const result = await activitiesApi.checkActivityTitle(
+          formData.title, 
+          formData.team_id,
+          activityId
+        );
+        setIsTitleUnique(result.unique);
       } catch (err) {
         console.error('Error checking title:', err);
         setIsTitleUnique(true);
@@ -203,9 +226,9 @@ const EditActivity = () => {
 
     try {
       // Make update request
-      const res = await api.put(`/activities/${activityId}`, formData);
+      const result = await activitiesApi.updateActivity(activityId, formData);
 
-      console.log('Activity updated successfully:', res.data);
+      console.log('Activity updated successfully:', result);
       setLoading(false);
       setSuccess(true);
       
@@ -245,6 +268,16 @@ const EditActivity = () => {
       </Container>
     );
   }
+
+  // Check if user is Base Guide and trying to assign leader
+  const isBaseGuide = user?.teams?.find(team => team.team_id === formData.team_id)?.role_level === 4;
+  const canAssignLeader = (leaderId) => {
+    if (!isBaseGuide) return true;
+    
+    // Base Guide can only assign Master Guide or Tactical Guide as leaders
+    const leader = teamMembers.find(member => member.user_id === Number(leaderId));
+    return !leader || leader.role_level <= 2;
+  };
 
   return (
     <Container className="py-4 activity-form-container">
@@ -292,18 +325,12 @@ const EditActivity = () => {
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Team*</Form.Label>
-                  <Form.Select
-                    name="team_id"
-                    value={formData.team_id}
-                    onChange={handleChange}
-                    required
-                    disabled // Team can't be changed once activity is created
-                  >
-                    <option value="">Select Team</option>
-                    {teams.map(team => (
-                      <option key={team.team_id} value={team.team_id}>{team.team_name}</option>
-                    ))}
-                  </Form.Select>
+                  <Form.Control
+                    type="text"
+                    value={originalActivity?.team_name || ''}
+                    disabled
+                    readOnly
+                  />
                   <Form.Text className="text-muted">
                     Team cannot be changed once an activity is created.
                   </Form.Text>
@@ -327,7 +354,7 @@ const EditActivity = () => {
             <Row>
               <Col md={6}>
                 <SearchableDropdown
-                  label="Location"
+                  label="Location*"
                   items={memoizedLocations}
                   onSelect={value => handleChange({ target: { name: 'location_id', value } })}
                   value={formData.location_id}
@@ -344,7 +371,7 @@ const EditActivity = () => {
 
               <Col md={6}>
                 <SearchableDropdown
-                  label="Activity Type"
+                  label="Activity Type*"
                   items={memoizedActivityTypes}
                   onSelect={value => handleChange({ target: { name: 'activity_type_id', value } })}
                   value={formData.activity_type_id}
@@ -359,7 +386,7 @@ const EditActivity = () => {
             </Row>
 
             <Row>
-              <Col md={3}>
+              <Col md={4}>
                 <Form.Group className="mb-3">
                   <Form.Label>Price (USD)*</Form.Label>
                   <Form.Control
@@ -374,7 +401,7 @@ const EditActivity = () => {
                 </Form.Group>
               </Col>
 
-              <Col md={3}>
+              <Col md={4}>
                 <Form.Group className="mb-3">
                   <Form.Label>Min Participants*</Form.Label>
                   <Form.Control
@@ -389,7 +416,7 @@ const EditActivity = () => {
                 </Form.Group>
               </Col>
 
-              <Col md={3}>
+              <Col md={4}>
                 <Form.Group className="mb-3">
                   <Form.Label>Max Participants*</Form.Label>
                   <Form.Control
@@ -402,8 +429,27 @@ const EditActivity = () => {
                   />
                 </Form.Group>
               </Col>
+            </Row>
 
-              <Col md={3}>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Difficulty Level*</Form.Label>
+                  <Form.Select
+                    name="difficulty_level"
+                    value={formData.difficulty_level}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="difficult">Difficult</option>
+                    <option value="extreme">Extreme</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+
+              <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Status*</Form.Label>
                   <Form.Select
@@ -422,18 +468,40 @@ const EditActivity = () => {
             </Row>
 
             <Form.Group className="mb-3">
-              <Form.Label>Difficulty Level*</Form.Label>
+              <Form.Label>Activity Leader*</Form.Label>
               <Form.Select
-                name="difficulty_level"
-                value={formData.difficulty_level}
+                name="leader_id"
+                value={formData.leader_id}
                 onChange={handleChange}
                 required
+                disabled={loadingTeamMembers}
+                isInvalid={isBaseGuide && formData.leader_id && !canAssignLeader(formData.leader_id)}
               >
-                <option value="easy">Easy</option>
-                <option value="moderate">Moderate</option>
-                <option value="difficult">Difficult</option>
-                <option value="extreme">Extreme</option>
+                {teamMembers.map(member => (
+                  <option 
+                    key={member.user_id} 
+                    value={member.user_id}
+                    disabled={isBaseGuide && member.role_level > 2}
+                  >
+                    {member.first_name} {member.last_name} - {
+                      member.role_level === 1 ? 'Master Guide' :
+                      member.role_level === 2 ? 'Tactical Guide' :
+                      member.role_level === 3 ? 'Technical Guide' : 'Base Guide'
+                    }
+                  </option>
+                ))}
               </Form.Select>
+              {loadingTeamMembers && <Form.Text>Loading team members...</Form.Text>}
+              {isBaseGuide && (
+                <Form.Text className="text-muted">
+                  As a Base Guide, you can only assign Master Guides or Tactical Guides as leaders.
+                </Form.Text>
+              )}
+              {isBaseGuide && formData.leader_id && !canAssignLeader(formData.leader_id) && (
+                <Form.Control.Feedback type="invalid">
+                  Base Guides can only assign Master Guides or Tactical Guides as leaders.
+                </Form.Control.Feedback>
+              )}
             </Form.Group>
 
             {checkingSimilar && <p>Checking for similar activities...</p>}
@@ -452,7 +520,7 @@ const EditActivity = () => {
               <Button 
                 variant="primary" 
                 type="submit" 
-                disabled={loading}
+                disabled={loading || (isBaseGuide && formData.leader_id && !canAssignLeader(formData.leader_id))}
               >
                 {loading ? (
                   <>

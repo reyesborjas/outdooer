@@ -4,42 +4,59 @@ from . import activities_bp
 from app.models.activity import Activity, find_similar_activities
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from .controllers import create_activity, update_activity as update_activity_controller
-
-
+from .controllers import (
+    get_all_activities, 
+    get_activity_by_id, 
+    get_my_activities as get_my_activities_controller,
+    create_activity as create_activity_controller,
+    update_activity as update_activity_controller,
+    delete_activity as delete_activity_controller
+)
 
 @activities_bp.route('/', methods=['GET'])
-def get_all_activities():
-    """Get all activities"""
-    try:
-        activities = Activity.query.all()
-        return jsonify([activity.to_dict() for activity in activities]), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
-
+def get_all_activities_route():
+    """Get all activities endpoint"""
+    return get_all_activities()
 
 @activities_bp.route('/team/<int:team_id>', methods=['GET'])
+@jwt_required()
 def get_activities_by_team(team_id):
-    """Get all activities for a specific team"""
+    """Get all activities for a specific team (respects permission levels)"""
     try:
-        activities = Activity.query.filter_by(team_id=team_id).all()
-        return jsonify([activity.to_dict() for activity in activities]), 200
+        current_user_id = get_jwt_identity()
+        
+        # Find user's role in this team
+        from app.models.team import TeamMember
+        membership = TeamMember.query.filter_by(
+            user_id=current_user_id,
+            team_id=team_id
+        ).first()
+        
+        if not membership:
+            return jsonify({"error": "You are not a member of this team"}), 403
+        
+        # Filter activities based on role level
+        if membership.role_level <= 2:  # Master Guide and Tactical Guide
+            activities = Activity.query.filter_by(team_id=team_id).all()
+        elif membership.role_level == 3:  # Technical Guide
+            activities = Activity.query.filter(
+                Activity.team_id == team_id,
+                (Activity.created_by == current_user_id) | (Activity.leader_id == current_user_id)
+            ).all()
+        else:  # Base Guide
+            activities = Activity.query.filter(
+                Activity.team_id == team_id,
+                Activity.created_by == current_user_id
+            ).all()
+        
+        return jsonify({'activities': [activity.to_dict() for activity in activities]}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @activities_bp.route('/<int:activity_id>', methods=['GET'])
-def get_activity_by_id(activity_id):
+def get_activity_by_id_route(activity_id):
     """Get a specific activity by ID"""
-    try:
-        activity = Activity.query.get(activity_id)
-        if activity:
-            return jsonify(activity.to_dict()), 200
-        return jsonify({"error": "Activity not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
+    return get_activity_by_id(activity_id)
 
 @activities_bp.route('/check-title', methods=['GET'])
 @jwt_required()
@@ -60,7 +77,6 @@ def check_activity_title():
         return jsonify({"unique": query.first() is None}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @activities_bp.route('/check-similar', methods=['GET'])
 @jwt_required()
@@ -94,62 +110,26 @@ def check_similar_activities():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @activities_bp.route('/', methods=['POST'])
 @jwt_required()
-def create_new_activity():
+def create_activity_route():
     """Create a new activity endpoint"""
-    try:
-        # Get current user ID from JWT token
-        current_user_id = get_jwt_identity()
-        
-        # Get data from request
-        data = request.get_json()
-        
-        # Make sure required fields are set
-        if 'created_by' not in data:
-            data['created_by'] = current_user_id
-            
-        if 'leader_id' not in data:
-            data['leader_id'] = current_user_id
-        
-        # Debug info
-        print(f"Creating activity with data: {data}")
-        print(f"User ID: {current_user_id}")
-        
-      
-        
-        # Call controller with the request context
-        return create_activity()
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error creating activity: {str(e)}")
-        return jsonify({"error": f"Failed to create activity: {str(e)}"}), 500
-
+    return create_activity_controller()
 
 @activities_bp.route('/<int:activity_id>', methods=['PUT'])
 @jwt_required()
-def update_activity(activity_id):
+def update_activity_route(activity_id):
     """Update an existing activity"""
-    try:
-        current_user_id = get_jwt_identity()
-        data = request.get_json()
-        return update_activity_controller(activity_id, current_user_id, data)
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": f"Failed to update activity: {str(e)}"}), 500
+    return update_activity_controller(activity_id)
 
+@activities_bp.route('/<int:activity_id>', methods=['DELETE'])
+@jwt_required()
+def delete_activity_route(activity_id):
+    """Delete an activity"""
+    return delete_activity_controller(activity_id)
 
 @activities_bp.route('/my-activities', methods=['GET'])
 @jwt_required()
 def get_my_activities():
-    """Get activities created by the current user"""
-    try:
-        current_user_id = get_jwt_identity()
-        print("User identity:", current_user_id)
-        activities = Activity.query.filter_by(created_by=current_user_id).all()
-        return jsonify([activity.to_dict() for activity in activities]), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
-    
+    """Get activities based on user's role"""
+    return get_my_activities_controller()

@@ -4,12 +4,19 @@ import { Container, Row, Col, Card, Badge, Button, Spinner, Alert, Tabs, Tab, Ta
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { FaEdit, FaEye, FaCalendarAlt, FaTrash } from 'react-icons/fa';
-import api from '../api';
+import { activitiesApi } from '../api/activities';
 import '../styles/MyActivities.css';
 
 const MyActivities = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isGuide } = useContext(AuthContext);
+  const { 
+    user, 
+    isAuthenticated, 
+    isGuide, 
+    canCreateActivity, 
+    canEditActivity, 
+    canDeleteActivity 
+  } = useContext(AuthContext);
   
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,16 +41,12 @@ const MyActivities = () => {
     const fetchMyActivities = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/activities/my-activities');
+        const response = await activitiesApi.getMyActivities();
         
         // Debug logs
-        console.log('Full response:', response);
-        console.log('Response data:', response.data);
-        console.log('Data type:', typeof response.data);
-        console.log('Is array?', Array.isArray(response.data));
+        console.log('Activities response:', response);
         
-        // The problem might be here - what is the structure of response.data?
-        setActivities(response.data.activities || []);
+        setActivities(response.activities || []);
       } catch (err) {
         console.error('Error fetching activities:', err);
         setError('Failed to load your activities. Please try again.');
@@ -105,7 +108,7 @@ const MyActivities = () => {
   const handleDelete = async (activityId) => {
     if (window.confirm('Are you sure you want to delete this activity? This action cannot be undone.')) {
       try {
-        await api.delete(`/activities/${activityId}`);
+        await activitiesApi.deleteActivity(activityId);
         // Remove the deleted activity from the state
         setActivities(activities.filter(a => a.activity_id !== activityId));
       } catch (err) {
@@ -163,16 +166,18 @@ const MyActivities = () => {
         <Col>
           <h1>My Activities</h1>
           <p className="text-muted">
-            Manage the activities you've created
+            Manage activities based on your role level
           </p>
         </Col>
         <Col xs="auto" className="d-flex align-items-center">
-          <Button 
-            variant="primary" 
-            onClick={() => navigate('/activities/new')}
-          >
-            Create New Activity
-          </Button>
+          {canCreateActivity() && (
+            <Button 
+              variant="primary" 
+              onClick={() => navigate('/activities/new')}
+            >
+              Create New Activity
+            </Button>
+          )}
         </Col>
       </Row>
       
@@ -199,8 +204,8 @@ const MyActivities = () => {
           {filteredActivities.length === 0 ? (
             <Alert variant="info">
               {activeTab === 'all' 
-                ? "You haven't created any activities yet." 
-                : `You don't have any ${activeTab} activities.`}
+                ? "You don't have any activities available based on your role." 
+                : `You don't have any ${activeTab} activities available.`}
             </Alert>
           ) : (
             <div className="table-responsive">
@@ -208,6 +213,7 @@ const MyActivities = () => {
                 <thead>
                   <tr>
                     <th>Title</th>
+                    <th>Team</th>
                     <th>Location</th>
                     <th>Type</th>
                     <th>Price</th>
@@ -221,6 +227,7 @@ const MyActivities = () => {
                   {filteredActivities.map(activity => (
                     <tr key={activity.activity_id}>
                       <td className="title-cell">{activity.title}</td>
+                      <td>{activity.team_name || 'N/A'}</td>
                       <td>{activity.location_name || 'N/A'}</td>
                       <td>{activity.activity_type_name || 'N/A'}</td>
                       <td>{formatPrice(activity.price)}</td>
@@ -246,32 +253,41 @@ const MyActivities = () => {
                           >
                             <FaEye />
                           </Button>
-                          <Button 
-                            variant="outline-secondary" 
-                            size="sm" 
-                            title="Edit Activity"
-                            onClick={() => handleEdit(activity.activity_id)}
-                            className="me-1"
-                          >
-                            <FaEdit />
-                          </Button>
-                          <Button 
-                            variant="outline-info" 
-                            size="sm" 
-                            title="Manage Dates"
-                            onClick={() => handleManageDates(activity.activity_id)}
-                            className="me-1"
-                          >
-                            <FaCalendarAlt />
-                          </Button>
-                          <Button 
-                            variant="outline-danger" 
-                            size="sm"
-                            title="Delete Activity"
-                            onClick={() => handleDelete(activity.activity_id)}
-                          >
-                            <FaTrash />
-                          </Button>
+                          
+                          {canEditActivity(activity) && (
+                            <Button 
+                              variant="outline-secondary" 
+                              size="sm" 
+                              title="Edit Activity"
+                              onClick={() => handleEdit(activity.activity_id)}
+                              className="me-1"
+                            >
+                              <FaEdit />
+                            </Button>
+                          )}
+                          
+                          {canEditActivity(activity) && (
+                            <Button 
+                              variant="outline-info" 
+                              size="sm" 
+                              title="Manage Dates"
+                              onClick={() => handleManageDates(activity.activity_id)}
+                              className="me-1"
+                            >
+                              <FaCalendarAlt />
+                            </Button>
+                          )}
+                          
+                          {canDeleteActivity(activity) && (
+                            <Button 
+                              variant="outline-danger" 
+                              size="sm"
+                              title="Delete Activity"
+                              onClick={() => handleDelete(activity.activity_id)}
+                            >
+                              <FaTrash />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

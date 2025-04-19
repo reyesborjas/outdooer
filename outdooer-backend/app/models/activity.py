@@ -23,7 +23,7 @@ class Activity(db.Model):
     activity_status = db.Column(db.String(20), default='active')
     
     # Relationships
-    location = db.relationship('Location', back_populates='activities')  # This is where Location is used
+    location = db.relationship('Location', back_populates='activities')
     team = db.relationship('Team', back_populates='activities')
     creator = db.relationship('User', foreign_keys=[created_by], back_populates='created_activities')
     leader = db.relationship('User', foreign_keys=[leader_id], back_populates='led_activities')
@@ -49,7 +49,13 @@ class Activity(db.Model):
             "activity_status": self.activity_status,
             # Include relationship data
             "location_name": self.location.location_name if self.location else None,
-            "activity_type_name": self.activity_type.activity_type_name if self.activity_type else None
+            "activity_type_name": self.activity_type.activity_type_name if self.activity_type else None,
+            # Include leader name if available
+            "leader_name": f"{self.leader.first_name} {self.leader.last_name}" if self.leader else None,
+            # Include creator name if available
+            "creator_name": f"{self.creator.first_name} {self.creator.last_name}" if self.creator else None,
+            # Include team name if available
+            "team_name": self.team.team_name if self.team else None
         }
 
 

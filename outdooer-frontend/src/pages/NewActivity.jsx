@@ -160,7 +160,7 @@ const NewActivity = () => {
   
       console.log('Sending data to server:', payload);
       
-      const res = await api.post('/api/activities/', payload);
+      const res = await api.post('/activities/', payload);
   
       console.log('Activity created successfully:', res.data);
       setLoading(false);
