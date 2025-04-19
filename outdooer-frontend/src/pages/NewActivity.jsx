@@ -1,7 +1,7 @@
-// src/pages/EditActivity.jsx
+// src/pages/NewActivity.jsx
 import React, { useState, useEffect } from 'react';
 import { Container, Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
@@ -9,8 +9,7 @@ import '../styles/ActivityForm.css';
 import SearchableDropdown from '../components/SearchableDropdown';
 import SimilarActivityWarning from '../components/SimilarActivityWarning';
 
-const EditActivity = () => {
-  const { activityId } = useParams();
+const NewActivity = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isGuide } = useContext(AuthContext);
   
@@ -24,32 +23,67 @@ const EditActivity = () => {
     min_participants: 1,
     max_participants: 10,
     activity_type_id: '',
-    team_id: '',
-    activity_status: 'active'
+    team_id: ''
   });
   
   // UI state
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [locations, setLocations] = useState([]);
   const [activityTypes, setActivityTypes] = useState([]);
-  const [unauthorizedAction, setUnauthorizedAction] = useState(false);
+  const [teams, setTeams] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
   const [similarActivities, setSimilarActivities] = useState([]);
   const [checkingSimilar, setCheckingSimilar] = useState(false);
   const [isTitleUnique, setIsTitleUnique] = useState(true);
   const [isTitleChecking, setIsTitleChecking] = useState(false);
   
-  // Check if user is authorized
+  // Check if user is authorized to create activities
   useEffect(() => {
     if (!isAuthenticated || !isGuide()) {
       navigate('/unauthorized');
     }
   }, [isAuthenticated, isGuide, navigate]);
   
-  // Check for similar activities
+  // Fetch necessary data (locations, activity types, teams)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoadingLocations(true);
+        // Fetch locations
+        const locationsResponse = await api.get('/locations');
+        setLocations(locationsResponse.data.locations || []);
+        
+        // Fetch activity types
+        const typesResponse = await api.get('/activity-types');
+        setActivityTypes(typesResponse.data.activity_types || []);
+        
+        // Fetch teams user belongs to
+        const teamsResponse = await api.get('/teams/my-teams');
+        setTeams(teamsResponse.data.teams || []);
+        
+        // Set default team if user belongs to only one team
+        if (teamsResponse.data.teams && teamsResponse.data.teams.length === 1) {
+          setFormData(prev => ({
+            ...prev,
+            team_id: teamsResponse.data.teams[0].team_id
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load necessary data. Please try again.');
+      } finally {
+        setLoadingLocations(false);
+      }
+    };
+    
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
+  
+  // Check for similar activities when location and activity type are selected
   useEffect(() => {
     // Only check when all three values are present
     if (!formData.team_id || !formData.activity_type_id || !formData.location_id) {
@@ -64,8 +98,7 @@ const EditActivity = () => {
           params: {
             team_id: formData.team_id,
             activity_type_id: formData.activity_type_id,
-            location_id: formData.location_id,
-            activity_id: activityId // Pass this when editing to exclude the current activity
+            location_id: formData.location_id
           }
         });
         
@@ -85,8 +118,8 @@ const EditActivity = () => {
     // Add debounce to prevent excessive API calls
     const timeoutId = setTimeout(checkSimilarActivities, 500);
     return () => clearTimeout(timeoutId);
-  }, [formData.team_id, formData.activity_type_id, formData.location_id, activityId]);
-  
+  }, [formData.team_id, formData.activity_type_id, formData.location_id]);
+
   // Check for duplicate titles
   useEffect(() => {
     if (!formData.title || !formData.team_id) return;
@@ -97,8 +130,7 @@ const EditActivity = () => {
         const response = await api.get(`/activities/check-title`, {
           params: {
             title: formData.title,
-            team_id: formData.team_id,
-            activity_id: activityId // Pass this when editing to exclude the current activity
+            team_id: formData.team_id
           }
         });
         setIsTitleUnique(response.data.unique);
@@ -114,62 +146,7 @@ const EditActivity = () => {
     // Debounce the API call to avoid too many requests while typing
     const timeoutId = setTimeout(checkTitle, 500);
     return () => clearTimeout(timeoutId);
-  }, [formData.title, formData.team_id, activityId]);
-  
-  // Fetch activity data and necessary dropdown options
-  useEffect(() => {
-    const fetchData = async () => {
-      setInitialLoading(true);
-      setError(null);
-      
-      try {
-        setLoadingLocations(true);
-        // Fetch activity details
-        const activityResponse = await api.get(`/activities/${activityId}`);
-        const activity = activityResponse.data.activity || activityResponse.data;
-        
-        // Check if user is authorized to edit this activity
-        if (activity.created_by !== user.user_id && activity.leader_id !== user.user_id) {
-          setUnauthorizedAction(true);
-          setError("You don't have permission to edit this activity");
-          setInitialLoading(false);
-          return;
-        }
-        
-        // Fetch locations
-        const locationsResponse = await api.get('/locations');
-        setLocations(locationsResponse.data.locations || []);
-        
-        // Fetch activity types
-        const typesResponse = await api.get('/activity-types');
-        setActivityTypes(typesResponse.data.activity_types || []);
-        
-        // Set form data from activity
-        setFormData({
-          title: activity.title || '',
-          description: activity.description || '',
-          location_id: activity.location_id || '',
-          difficulty_level: activity.difficulty_level || 'moderate',
-          price: activity.price || '',
-          min_participants: activity.min_participants || 1,
-          max_participants: activity.max_participants || 10,
-          activity_type_id: activity.activity_type_id || '',
-          team_id: activity.team_id || '',
-          activity_status: activity.activity_status || 'active'
-        });
-      } catch (err) {
-        console.error('Error fetching activity data:', err);
-        setError('Failed to load activity data. Please try again.');
-      } finally {
-        setInitialLoading(false);
-        setLoadingLocations(false);
-      }
-    };
-    
-    if (isAuthenticated && activityId) {
-      fetchData();
-    }
-  }, [isAuthenticated, activityId, user.user_id]);
+  }, [formData.title, formData.team_id]);
   
   // Handle form input changes
   const handleChange = (e) => {
@@ -193,6 +170,7 @@ const EditActivity = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validate title uniqueness
     if (!isTitleUnique) {
       setError("Please choose a unique activity title.");
       return;
@@ -207,7 +185,7 @@ const EditActivity = () => {
         const confirmed = window.confirm(
           `We found ${similarActivities.length} similar ${
             similarActivities.length === 1 ? 'activity' : 'activities'
-          } with the same type and location. Are you sure you want to continue?`
+          } with the same type and location. Are you sure you want to create a new one?`
         );
         
         if (!confirmed) {
@@ -216,54 +194,40 @@ const EditActivity = () => {
         }
       }
       
-      // Update the activity
-      const response = await api.put(`/activities/${activityId}`, formData);
+      // Create the activity
+      const response = await api.post('/activities', {
+        ...formData,
+        created_by: user.user_id,
+        leader_id: user.user_id
+      });
       
-      console.log('Activity updated:', response.data);
+      console.log('Activity created:', response.data);
       setSuccess(true);
       
       // Redirect after a short delay
       setTimeout(() => {
-        navigate(`/activities/${activityId}`);
+        navigate(`/activities/${response.data.activity_id}`);
       }, 2000);
     } catch (err) {
-      console.error('Error updating activity:', err);
-      setError(err.response?.data?.error || 'Failed to update activity. Please try again.');
+      console.error('Error creating activity:', err);
+      setError(err.response?.data?.error || 'Failed to create activity. Please try again.');
     } finally {
       setLoading(false);
     }
   };
   
-  if (!isAuthenticated || unauthorizedAction) {
-    return (
-      <Container className="py-4">
-        <Alert variant="danger">
-          {error || "You don't have permission to edit this activity"}
-        </Alert>
-        <Button variant="primary" onClick={() => navigate('/my-activities')}>
-          Back to My Activities
-        </Button>
-      </Container>
-    );
-  }
-  
-  if (initialLoading) {
-    return (
-      <Container className="py-4 text-center">
-        <Spinner animation="border" role="status" />
-        <p className="mt-3">Loading activity data...</p>
-      </Container>
-    );
+  if (!isAuthenticated) {
+    return null; // Will redirect in useEffect
   }
   
   return (
     <Container className="py-4 activity-form-container">
       <Card className="shadow-sm">
-        <Card.Header as="h1" className="text-center">Edit Activity</Card.Header>
+        <Card.Header as="h1" className="text-center">Create New Activity</Card.Header>
         <Card.Body>
           {success && (
             <Alert variant="success">
-              Activity updated successfully! Redirecting to activity details...
+              Activity created successfully! Redirecting to activity details...
             </Alert>
           )}
           
@@ -301,17 +265,19 @@ const EditActivity = () => {
               
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Status</Form.Label>
+                  <Form.Label>Team*</Form.Label>
                   <Form.Select
-                    name="activity_status"
-                    value={formData.activity_status}
+                    name="team_id"
+                    value={formData.team_id}
                     onChange={handleChange}
                     required
                   >
-                    <option value="draft">Draft</option>
-                    <option value="active">Active</option>
-                    <option value="canceled">Canceled</option>
-                    <option value="completed">Completed</option>
+                    <option value="">Select Team</option>
+                    {teams.map(team => (
+                      <option key={team.team_id} value={team.team_id}>
+                        {team.team_name}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -452,9 +418,9 @@ const EditActivity = () => {
                 {loading ? (
                   <>
                     <Spinner as="span" animation="border" size="sm" className="me-2" />
-                    Updating...
+                    Creating...
                   </>
-                ) : 'Update Activity'}
+                ) : 'Create Activity'}
               </Button>
             </div>
           </Form>
@@ -464,4 +430,4 @@ const EditActivity = () => {
   );
 };
 
-export default EditActivity;
+export default NewActivity;
