@@ -8,6 +8,8 @@ import '../styles/ActivityForm.css';
 import SearchableDropdown from '../components/SearchableDropdown';
 import SimilarActivityWarning from '../components/SimilarActivityWarning';
 
+
+
 const NewActivity = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isGuide } = useContext(AuthContext);
