@@ -1,0 +1,38 @@
+/* src/styles/SearchableDropdown.css */
+.searchable-dropdown {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+  
+  .searchable-dropdown .dropdown-list {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    margin-top: 0.25rem;
+  }
+  
+  .searchable-dropdown .list-group-item {
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+  }
+  
+  .searchable-dropdown .list-group-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .searchable-dropdown .list-group-item.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+  }
+  
+  .searchable-dropdown .no-results {
+    text-align: center;
+    font-style: italic;
+    color: #6c757d;
+  }

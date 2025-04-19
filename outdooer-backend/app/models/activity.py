@@ -47,3 +47,42 @@ class Activity(db.Model):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "activity_status": self.activity_status,
         }
+
+
+def to_dict(self):
+    return {
+        'id': self.activity_id,
+        'title': self.title,
+        'description': self.description,
+        'location_name': self.location.location_name if self.location else None,
+        'difficulty_level': self.difficulty_level,
+        'price': float(self.price) if self.price else 0,
+        'min_participants': self.min_participants,
+        'max_participants': self.max_participants,
+        'status': self.activity_status
+    }
+
+
+def find_similar_activities(team_id, activity_type_id, location_id, exclude_activity_id=None):
+    """
+    Find activities with the same activity_type, team, and location
+    
+    Parameters:
+    - team_id: ID of the team
+    - activity_type_id: ID of the activity type
+    - location_id: ID of the location
+    - exclude_activity_id: Optional ID to exclude from results (for editing)
+    
+    Returns:
+    - List of similar activities
+    """
+    query = Activity.query.filter_by(
+        team_id=team_id,
+        activity_type_id=activity_type_id,
+        location_id=location_id
+    )
+    
+    if exclude_activity_id:
+        query = query.filter(Activity.activity_id != exclude_activity_id)
+    
+    return query.all()

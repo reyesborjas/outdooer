@@ -1463,10 +1463,12 @@ CREATE INDEX idx_guide_payout_details_earning_id ON GuidePayoutDetails(earning_i
 CREATE INDEX idx_earnings_summaries_guide_id ON EarningsSummaries(guide_id);
 CREATE INDEX idx_earnings_summaries_team_id ON EarningsSummaries(team_id);
 CREATE INDEX idx_earnings_summaries_year_month ON EarningsSummaries(year, month);
+-- Add to your database migrations
+CREATE INDEX idx_locations_search ON locations (location_name, country_code, region_code, formatted_address);
+ALTER TABLE Activities 
+ADD CONSTRAINT unique_activity_title_per_team 
+UNIQUE (team_id, title);
 
--- Part 8: Route Calculation Logic and Final Functions
-
--- Trigger to calculate expedition route when activities are added or updated
 CREATE OR REPLACE FUNCTION calculate_expedition_route()
 RETURNS TRIGGER AS $$
 DECLARE

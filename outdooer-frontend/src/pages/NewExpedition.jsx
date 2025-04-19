@@ -16,6 +16,7 @@ import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 import { FaTrash, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import '../styles/ActivityForm.css';
+import SimilarActivityWarning from '../components/SimilarActivityWarning';
 
 const NewExpedition = () => {
   const navigate = useNavigate();
@@ -40,6 +41,8 @@ const NewExpedition = () => {
   const [success, setSuccess] = useState(false);
   const [teams, setTeams] = useState([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
+  const [similarActivities, setSimilarActivities] = useState([]);
+  const [checkingSimilar, setCheckingSimilar] = useState(false);
   
   // Check if user is authorized to create expeditions
   useEffect(() => {
@@ -92,6 +95,24 @@ const NewExpedition = () => {
     fetchActivities();
   }, [formData.team_id]);
   
+  // Function to check for similar activities
+  const checkSimilarActivities = async (activityId) => {
+    if (!activityId) return;
+    
+    setCheckingSimilar(true);
+    try {
+      const response = await api.get(`/activities/${activityId}/similar`);
+      if (response.data && response.data.similar_activities) {
+        setSimilarActivities(response.data.similar_activities);
+      }
+    } catch (err) {
+      console.error('Error checking for similar activities:', err);
+      setSimilarActivities([]);
+    } finally {
+      setCheckingSimilar(false);
+    }
+  };
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     
@@ -107,6 +128,9 @@ const NewExpedition = () => {
     const activity = availableActivities.find(act => act.activity_id === Number(activityId));
     
     if (activity && !selectedActivities.some(a => a.activity_id === activity.activity_id)) {
+      // Check for similar activities when adding a new one
+      checkSimilarActivities(activityId);
+      
       setSelectedActivities(prev => [
         ...prev, 
         { 
@@ -185,6 +209,18 @@ const NewExpedition = () => {
     if (selectedActivities.length === 0) {
       setError('Please add at least one activity to the expedition.');
       return;
+    }
+    
+    if (similarActivities.length > 0) {
+      const confirmed = window.confirm(
+        `We found ${similarActivities.length} similar ${
+          similarActivities.length === 1 ? 'activity' : 'activities'
+        }. Are you sure you want to proceed with creating this expedition?`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
     }
     
     setLoading(true);
@@ -478,6 +514,15 @@ const NewExpedition = () => {
                       </ListGroup>
                     )}
                   </div>
+                  
+                  {/* Display similar activities warning */}
+                  {checkingSimilar ? (
+                    <div className="text-center my-3">
+                      <Spinner animation="border" size="sm" /> Checking for similar activities...
+                    </div>
+                  ) : (
+                    <SimilarActivityWarning similarActivities={similarActivities} />
+                  )}
                 </>
               )}
             </div>

@@ -6,6 +6,8 @@ import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 import '../styles/ActivityForm.css';
+import SearchableDropdown from '../components/SearchableDropdown';
+import SimilarActivityWarning from '../components/SimilarActivityWarning';
 
 const EditActivity = () => {
   const { activityId } = useParams();
@@ -34,6 +36,11 @@ const EditActivity = () => {
   const [locations, setLocations] = useState([]);
   const [activityTypes, setActivityTypes] = useState([]);
   const [unauthorizedAction, setUnauthorizedAction] = useState(false);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [similarActivities, setSimilarActivities] = useState([]);
+  const [checkingSimilar, setCheckingSimilar] = useState(false);
+  const [isTitleUnique, setIsTitleUnique] = useState(true);
+  const [isTitleChecking, setIsTitleChecking] = useState(false);
   
   // Check if user is authorized
   useEffect(() => {
@@ -42,6 +49,73 @@ const EditActivity = () => {
     }
   }, [isAuthenticated, isGuide, navigate]);
   
+  // Check for similar activities
+  useEffect(() => {
+    // Only check when all three values are present
+    if (!formData.team_id || !formData.activity_type_id || !formData.location_id) {
+      setSimilarActivities([]);
+      return;
+    }
+    
+    const checkSimilarActivities = async () => {
+      setCheckingSimilar(true);
+      try {
+        const response = await api.get('/activities/check-similar', {
+          params: {
+            team_id: formData.team_id,
+            activity_type_id: formData.activity_type_id,
+            location_id: formData.location_id,
+            activity_id: activityId // Pass this when editing to exclude the current activity
+          }
+        });
+        
+        if (response.data.has_similar) {
+          setSimilarActivities(response.data.similar_activities);
+        } else {
+          setSimilarActivities([]);
+        }
+      } catch (err) {
+        console.error('Error checking for similar activities:', err);
+        setSimilarActivities([]);
+      } finally {
+        setCheckingSimilar(false);
+      }
+    };
+    
+    // Add debounce to prevent excessive API calls
+    const timeoutId = setTimeout(checkSimilarActivities, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.team_id, formData.activity_type_id, formData.location_id, activityId]);
+  
+  // Check for duplicate titles
+  useEffect(() => {
+    if (!formData.title || !formData.team_id) return;
+    
+    const checkTitle = async () => {
+      setIsTitleChecking(true);
+      try {
+        const response = await api.get(`/activities/check-title`, {
+          params: {
+            title: formData.title,
+            team_id: formData.team_id,
+            activity_id: activityId // Pass this when editing to exclude the current activity
+          }
+        });
+        setIsTitleUnique(response.data.unique);
+      } catch (err) {
+        console.error('Error checking title uniqueness:', err);
+        // Default to allowing submission if the check fails
+        setIsTitleUnique(true);
+      } finally {
+        setIsTitleChecking(false);
+      }
+    };
+    
+    // Debounce the API call to avoid too many requests while typing
+    const timeoutId = setTimeout(checkTitle, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.title, formData.team_id, activityId]);
+  
   // Fetch activity data and necessary dropdown options
   useEffect(() => {
     const fetchData = async () => {
@@ -49,6 +123,7 @@ const EditActivity = () => {
       setError(null);
       
       try {
+        setLoadingLocations(true);
         // Fetch activity details
         const activityResponse = await api.get(`/activities/${activityId}`);
         const activity = activityResponse.data.activity || activityResponse.data;
@@ -87,13 +162,14 @@ const EditActivity = () => {
         setError('Failed to load activity data. Please try again.');
       } finally {
         setInitialLoading(false);
+        setLoadingLocations(false);
       }
     };
     
     if (isAuthenticated && activityId) {
       fetchData();
     }
-  }, [isAuthenticated, activityId, user]);
+  }, [isAuthenticated, activityId, user.user_id]);
   
   // Handle form input changes
   const handleChange = (e) => {
@@ -116,10 +192,30 @@ const EditActivity = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!isTitleUnique) {
+      setError("Please choose a unique activity title.");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
     try {
+      // Confirm if there are similar activities
+      if (similarActivities.length > 0) {
+        const confirmed = window.confirm(
+          `We found ${similarActivities.length} similar ${
+            similarActivities.length === 1 ? 'activity' : 'activities'
+          } with the same type and location. Are you sure you want to continue?`
+        );
+        
+        if (!confirmed) {
+          setLoading(false);
+          return;
+        }
+      }
+      
       // Update the activity
       const response = await api.put(`/activities/${activityId}`, formData);
       
@@ -189,7 +285,17 @@ const EditActivity = () => {
                     onChange={handleChange}
                     required
                     placeholder="E.g., Mountain Hiking Adventure"
+                    isValid={formData.title && isTitleUnique}
+                    isInvalid={formData.title && !isTitleUnique}
                   />
+                  {isTitleChecking && (
+                    <Form.Text className="text-muted">Checking title availability...</Form.Text>
+                  )}
+                  {!isTitleUnique && (
+                    <Form.Control.Feedback type="invalid">
+                      An activity with this name already exists in your team. Please choose a different name.
+                    </Form.Control.Feedback>
+                  )}
                 </Form.Group>
               </Col>
               
@@ -226,41 +332,35 @@ const EditActivity = () => {
             
             <Row>
               <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Location*</Form.Label>
-                  <Form.Select
-                    name="location_id"
-                    value={formData.location_id}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Location</option>
-                    {locations.map(location => (
-                      <option key={location.location_id} value={location.location_id}>
-                        {location.location_name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
+                <SearchableDropdown
+                  label="Location"
+                  items={locations}
+                  onSelect={(value) => handleChange({ target: { name: 'location_id', value }})}
+                  value={formData.location_id}
+                  valueKey="location_id"
+                  displayKey="location_name"
+                  extraDisplayKeys={['country_code', 'region_code']}
+                  placeholder="Search for a location..."
+                  required={true}
+                  searchKeys={['location_name', 'country_code', 'region_code', 'formatted_address']}
+                  noResultsMessage="No locations found. Try a different search term."
+                  isLoading={loadingLocations}
+                />
               </Col>
               
               <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Activity Type*</Form.Label>
-                  <Form.Select
-                    name="activity_type_id"
-                    value={formData.activity_type_id}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Activity Type</option>
-                    {activityTypes.map(type => (
-                      <option key={type.activity_type_id} value={type.activity_type_id}>
-                        {type.activity_type_name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
+                <SearchableDropdown
+                  label="Activity Type"
+                  items={activityTypes}
+                  onSelect={(value) => handleChange({ target: { name: 'activity_type_id', value }})}
+                  value={formData.activity_type_id}
+                  valueKey="activity_type_id"
+                  displayKey="activity_type_name"
+                  placeholder="Search for an activity type..."
+                  required={true}
+                  searchKeys={['activity_type_name', 'description']}
+                  noResultsMessage="No activity types found. Try a different search term."
+                />
               </Col>
             </Row>
             
@@ -330,6 +430,14 @@ const EditActivity = () => {
                 </Form.Group>
               </Col>
             </Row>
+            
+            {checkingSimilar ? (
+              <div className="text-center my-3">
+                <Spinner animation="border" size="sm" /> Checking for similar activities...
+              </div>
+            ) : (
+              <SimilarActivityWarning similarActivities={similarActivities} />
+            )}
             
             <div className="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
               <Button 
