@@ -1,7 +1,7 @@
 # app/models/activity.py
 from app import db
 from datetime import datetime
-from app.models.location import Location
+from app.models.location import Location  # Import is used for the relationship
 
 class Activity(db.Model):
     __tablename__ = 'activities'
@@ -21,8 +21,9 @@ class Activity(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     activity_status = db.Column(db.String(20), default='active')
-       # Relationships
-    location = db.relationship('Location', back_populates='activities')
+    
+    # Relationships
+    location = db.relationship('Location', back_populates='activities')  # This is where Location is used
     team = db.relationship('Team', back_populates='activities')
     creator = db.relationship('User', foreign_keys=[created_by], back_populates='created_activities')
     leader = db.relationship('User', foreign_keys=[leader_id], back_populates='led_activities')
@@ -46,21 +47,10 @@ class Activity(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "activity_status": self.activity_status,
+            # Include relationship data
+            "location_name": self.location.location_name if self.location else None,
+            "activity_type_name": self.activity_type.activity_type_name if self.activity_type else None
         }
-
-
-def to_dict(self):
-    return {
-        'id': self.activity_id,
-        'title': self.title,
-        'description': self.description,
-        'location_name': self.location.location_name if self.location else None,
-        'difficulty_level': self.difficulty_level,
-        'price': float(self.price) if self.price else 0,
-        'min_participants': self.min_participants,
-        'max_participants': self.max_participants,
-        'status': self.activity_status
-    }
 
 
 def find_similar_activities(team_id, activity_type_id, location_id, exclude_activity_id=None):

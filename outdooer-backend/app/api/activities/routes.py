@@ -2,6 +2,7 @@ from flask import jsonify, request
 from . import activities_bp
 from app.models.activity import Activity, find_similar_activities
 from flask_jwt_extended import jwt_required
+from app import db
 
 @activities_bp.route('/', methods=['GET'])
 def get_all_activities():
@@ -75,3 +76,33 @@ def check_similar_activities():
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@activities_bp.route('/', methods=['POST'])
+def create_new_activity():
+    """Create a new activity endpoint"""
+    try:
+        data = request.get_json()
+        # Create a simplified activity for testing
+        new_activity = Activity(
+            title=data.get('title', 'Test Activity'),
+            team_id=data.get('team_id', 1),
+            description=data.get('description', 'Test description'),
+            location_id=data.get('location_id'),
+            price=data.get('price', 0),
+            min_participants=data.get('min_participants', 1),
+            max_participants=data.get('max_participants', 10),
+        )
+        db.session.add(new_activity)
+        db.session.commit()
+        return jsonify({"message": "Activity created successfully", "activity_id": new_activity.activity_id}), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating activity: {str(e)}")
+        return jsonify({"error": f"Failed to create activity: {str(e)}"}), 500
+
+@activities_bp.route('/<int:activity_id>', methods=['PUT'])
+@jwt_required()
+def update_activity(activity_id):
+    """Update an existing activity"""
+    from .controllers import update_activity as update_activity_controller
+    return update_activity_controller(activity_id)

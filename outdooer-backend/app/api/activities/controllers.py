@@ -4,6 +4,9 @@ from flask import jsonify, request
 from datetime import datetime
 from app import db
 from app.models.activity import Activity
+from app.models.location import Location
+from app.models.activity_type import ActivityType
+from flask_jwt_extended import get_jwt_identity
 
 def get_all_activities():
     """Get all activities from the database"""
@@ -30,56 +33,96 @@ def get_activity_by_id(activity_id):
 
 def create_activity():
     """Create a new activity"""
-    data = request.get_json()
-
-    # Check for duplicate activity name in the same team
-    existing_activity = Activity.query.filter_by(
-        team_id=data.get('team_id'),
-        title=data.get('title')
-    ).first()
-
-    if existing_activity:
-        return jsonify({"error": "An activity with this name already exists in your team"}), 400
-
-    new_activity = Activity(
-        title=data.get('title'),
-        team_id=data.get('team_id'),
-        description=data.get('description'),
-        location_id=data.get('location_id'),
-        difficulty_level=data.get('difficulty_level'),
-        price=data.get('price'),
-        min_participants=data.get('min_participants'),
-        max_participants=data.get('max_participants'),
-        activity_type_id=data.get('activity_type_id'),
-        leader_id=data.get('leader_id'),
-        activity_status=data.get('activity_status')
-    )
-
     try:
-        db.session.add(new_activity)
-        db.session.commit()
-        return jsonify({"message": "Activity created successfully", "activity_id": new_activity.activity_id}), 201
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error creating activity: {str(e)}")
-        return jsonify({"error": "Failed to create activity"}), 500
+        data = request.get_json()
 
-def update_activity(activity_id):
-    """Update an existing activity"""
-    data = request.get_json()
-    activity = Activity.query.get_or_404(activity_id)
+        # Set created_by to current user if not specified
+        if 'created_by' not in data:
+            data['created_by'] = get_jwt_identity()
 
-    # Check for duplicate title if changed
-    if 'title' in data and data['title'] != activity.title:
+        # Check for duplicate activity name in the same team
         existing_activity = Activity.query.filter_by(
-            team_id=activity.team_id,
-            title=data['title']
+            team_id=data.get('team_id'),
+            title=data.get('title')
         ).first()
 
         if existing_activity:
             return jsonify({"error": "An activity with this name already exists in your team"}), 400
 
+        # Validate location exists
+        location_id = data.get('location_id')
+        if location_id:
+            location = Location.query.get(location_id)
+            if not location:
+                return jsonify({"error": f"Location with ID {location_id} not found"}), 400
+
+        # Validate activity type exists
+        activity_type_id = data.get('activity_type_id')
+        if activity_type_id:
+            activity_type = ActivityType.query.get(activity_type_id)
+            if not activity_type:
+                return jsonify({"error": f"Activity type with ID {activity_type_id} not found"}), 400
+
+        new_activity = Activity(
+            title=data.get('title'),
+            team_id=data.get('team_id'),
+            description=data.get('description'),
+            location_id=location_id,
+            difficulty_level=data.get('difficulty_level'),
+            price=data.get('price'),
+            min_participants=data.get('min_participants'),
+            max_participants=data.get('max_participants'),
+            activity_type_id=activity_type_id,
+            leader_id=data.get('leader_id'),
+            activity_status=data.get('activity_status', 'active'),
+            created_by=data.get('created_by')
+        )
+
+        db.session.add(new_activity)
+        db.session.commit()
+        
+        # Refresh to get relationships loaded
+        db.session.refresh(new_activity)
+        
+        return jsonify({
+            "message": "Activity created successfully", 
+            "activity_id": new_activity.activity_id,
+            "activity": new_activity.to_dict()
+        }), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error creating activity: {str(e)}")
+        return jsonify({"error": f"Failed to create activity: {str(e)}"}), 500
+
+def update_activity(activity_id):
+    """Update an existing activity"""
     try:
+        data = request.get_json()
+        activity = Activity.query.get_or_404(activity_id)
+
+        # Check for duplicate title if changed
+        if 'title' in data and data['title'] != activity.title:
+            existing_activity = Activity.query.filter_by(
+                team_id=activity.team_id,
+                title=data['title']
+            ).first()
+
+            if existing_activity:
+                return jsonify({"error": "An activity with this name already exists in your team"}), 400
+
+        # Validate location exists if it's being updated
+        if 'location_id' in data and data['location_id'] != activity.location_id:
+            location = Location.query.get(data['location_id'])
+            if not location:
+                return jsonify({"error": f"Location with ID {data['location_id']} not found"}), 400
+
+        # Validate activity type exists if it's being updated
+        if 'activity_type_id' in data and data['activity_type_id'] != activity.activity_type_id:
+            activity_type = ActivityType.query.get(data['activity_type_id'])
+            if not activity_type:
+                return jsonify({"error": f"Activity type with ID {data['activity_type_id']} not found"}), 400
+
+        # Update fields if provided in request
         if 'title' in data:
             activity.title = data['title']
         if 'description' in data:
@@ -103,9 +146,16 @@ def update_activity(activity_id):
 
         activity.updated_at = datetime.utcnow()
         db.session.commit()
+        
+        # Refresh to get relationships loaded
+        db.session.refresh(activity)
 
-        return jsonify({"message": "Activity updated successfully", "activity_id": activity.activity_id}), 200
+        return jsonify({
+            "message": "Activity updated successfully", 
+            "activity_id": activity.activity_id,
+            "activity": activity.to_dict()
+        }), 200
     except Exception as e:
         db.session.rollback()
         print(f"Error updating activity {activity_id}: {str(e)}")
-        return jsonify({"error": "Failed to update activity"}), 500
+        return jsonify({"error": f"Failed to update activity: {str(e)}"}), 500

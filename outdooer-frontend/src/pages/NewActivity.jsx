@@ -39,12 +39,15 @@ const NewActivity = () => {
   const memoizedLocations = useMemo(() => locations, [locations]);
   const memoizedActivityTypes = useMemo(() => activityTypes, [activityTypes]);
 
+  // Check user authorization
   useEffect(() => {
     if (!isAuthenticated || !isGuide()) {
       navigate('/unauthorized');
+      return;
     }
   }, [isAuthenticated, isGuide, navigate]);
 
+  // Fetch necessary data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -73,6 +76,7 @@ const NewActivity = () => {
     if (isAuthenticated) fetchData();
   }, [isAuthenticated]);
 
+  // Check for similar activities
   useEffect(() => {
     if (!formData.team_id || !formData.activity_type_id || !formData.location_id) {
       setSimilarActivities([]);
@@ -101,6 +105,7 @@ const NewActivity = () => {
     return () => clearTimeout(timeoutId);
   }, [formData.team_id, formData.activity_type_id, formData.location_id]);
 
+  // Check for unique title
   useEffect(() => {
     if (!formData.title || !formData.team_id) return;
 
@@ -132,42 +137,83 @@ const NewActivity = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Fixed handleSubmit function for your NewActivity.jsx component
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!isTitleUnique) {
-      setError('Please choose a unique activity title.');
-      return;
-    }
+  if (!isTitleUnique) {
+    setError('Please choose a unique activity title.');
+    return;
+  }
 
-    setLoading(true);
-    setError(null);
+  setLoading(true);
+  setError(null);
 
-    try {
-      if (similarActivities.length > 0) {
-        const confirmed = window.confirm(
-          `We found ${similarActivities.length} similar activity(ies). Do you still want to create this one?`
-        );
-        if (!confirmed) {
-          setLoading(false);
-          return;
-        }
+  try {
+    // Check for similar activities confirmation
+    if (similarActivities.length > 0) {
+      const confirmed = window.confirm(
+        `We found ${similarActivities.length} similar activity(ies). Do you still want to create this one?`
+      );
+      if (!confirmed) {
+        setLoading(false);
+        return;
       }
-
-      const res = await api.post('/activities', {
-        ...formData,
-        created_by: user.user_id,
-        leader_id: user.user_id
-      });
-
-      setSuccess(true);
-      setTimeout(() => navigate(`/activities/${res.data.activity_id}`), 2000);
-    } catch (err) {
-      console.error('Error creating activity:', err);
-      setError(err.response?.data?.error || 'Failed to create activity.');
-    } finally {
-      setLoading(false);
     }
+
+    // Make sure to use the trailing slash to match the server's expectations
+    const res = await api.post('activities/', {
+      ...formData,
+      created_by: user.user_id,
+      leader_id: user.user_id
+    });
+
+    console.log('Activity created successfully:', res.data);
+    
+    // Clear loading state before changing route
+    setLoading(false);
+    
+    // Set success state
+    setSuccess(true);
+    
+    // Use window.location for more reliable navigation
+    // This is more direct and bypasses potential React Router issues
+    setTimeout(() => {
+      window.location.href = `/activities/${res.data.activity_id}`;
+    }, 1000); // Short delay to ensure state updates are processed
+
+  } catch (err) {
+    console.error('Error creating activity:', err);
+    setError(err.response?.data?.error || 'Failed to create activity.');
+    setLoading(false);
+  }
+};
+
+// Also add this to your form:
+<div className="d-flex justify-content-between mt-4">
+  <Button 
+    variant="outline-secondary" 
+    onClick={() => window.location.href = '/activities'}
+    type="button"
+  >
+    Cancel
+  </Button>
+  <Button 
+    variant="primary"
+    type="submit" 
+    disabled={loading}
+  >
+    {loading ? (
+      <>
+        <Spinner animation="border" size="sm" className="me-2" />
+        Creating...
+      </>
+    ) : 'Create Activity'}
+  </Button>
+</div>
+  const handleCancel = () => {
+    // Use direct navigation as a more reliable method
+    window.location.href = '/activities';
   };
 
   if (!isAuthenticated) return null;
@@ -177,8 +223,17 @@ const NewActivity = () => {
       <Card className="shadow-sm">
         <Card.Header as="h1" className="text-center">Create New Activity</Card.Header>
         <Card.Body>
-          {success && <Alert variant="success">Activity created successfully! Redirecting...</Alert>}
-          {error && <Alert variant="danger">{error}</Alert>}
+          {success && (
+            <Alert variant="success">
+              Activity created successfully! Redirecting...
+            </Alert>
+          )}
+          
+          {error && (
+            <Alert variant="danger" onClose={() => setError(null)} dismissible>
+              {error}
+            </Alert>
+          )}
 
           <Form onSubmit={handleSubmit}>
             <Row>
@@ -272,74 +327,89 @@ const NewActivity = () => {
             </Row>
 
             <Row>
-  <Col md={4}>
-    <Form.Group className="mb-3">
-      <Form.Label>Price (USD)*</Form.Label>
-      <Form.Control
-        type="number"
-        name="price"
-        min="0"
-        step="0.01"
-        value={formData.price}
-        onChange={handleChange}
-        required
-      />
-    </Form.Group>
-  </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Price (USD)*</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="price"
+                    min="0"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={handleChange}
+                    required
+                  />
+                </Form.Group>
+              </Col>
 
-  <Col md={4}>
-    <Form.Group className="mb-3">
-      <Form.Label>Min Participants*</Form.Label>
-      <Form.Control
-        type="number"
-        name="min_participants"
-        min="1"
-        max={formData.max_participants || 100}
-        value={formData.min_participants}
-        onChange={handleChange}
-        required
-      />
-    </Form.Group>
-  </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Min Participants*</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="min_participants"
+                    min="1"
+                    max={formData.max_participants || 100}
+                    value={formData.min_participants}
+                    onChange={handleChange}
+                    required
+                  />
+                </Form.Group>
+              </Col>
 
-  <Col md={4}>
-    <Form.Group className="mb-3">
-      <Form.Label>Max Participants*</Form.Label>
-      <Form.Control
-        type="number"
-        name="max_participants"
-        min={formData.min_participants || 1}
-        value={formData.max_participants}
-        onChange={handleChange}
-        required
-      />
-    </Form.Group>
-  </Col>
-</Row>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Max Participants*</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="max_participants"
+                    min={formData.min_participants || 1}
+                    value={formData.max_participants}
+                    onChange={handleChange}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
 
-<Form.Group className="mb-3">
-  <Form.Label>Difficulty Level*</Form.Label>
-  <Form.Select
-    name="difficulty_level"
-    value={formData.difficulty_level}
-    onChange={handleChange}
-    required
-  >
-    <option value="easy">Easy</option>
-    <option value="moderate">Moderate</option>
-    <option value="hard">Hard</option>
-  </Form.Select>
-</Form.Group>
-
+            <Form.Group className="mb-3">
+              <Form.Label>Difficulty Level*</Form.Label>
+              <Form.Select
+                name="difficulty_level"
+                value={formData.difficulty_level}
+                onChange={handleChange}
+                required
+              >
+                <option value="easy">Easy</option>
+                <option value="moderate">Moderate</option>
+                <option value="hard">Hard</option>
+              </Form.Select>
+            </Form.Group>
 
             {checkingSimilar && <p>Checking for similar activities...</p>}
             {similarActivities.length > 0 && (
               <SimilarActivityWarning activities={similarActivities} />
             )}
 
-            <div className="d-flex justify-content-end mt-4">
-              <Button type="submit" disabled={loading}>
-                {loading ? <Spinner animation="border" size="sm" /> : 'Create Activity'}
+            <div className="d-flex justify-content-between mt-4">
+              <Button 
+                variant="outline-secondary" 
+                onClick={handleCancel}
+                type="button"
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="primary" 
+                type="submit" 
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Creating...
+                  </>
+                ) : 'Create Activity'}
               </Button>
             </div>
           </Form>
