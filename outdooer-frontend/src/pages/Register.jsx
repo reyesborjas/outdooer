@@ -1,10 +1,16 @@
+// src/pages/Register.jsx
 import { useState, useContext, useEffect } from 'react';
-import { Form, Button, Container, Row, Col, Card, Alert, Badge } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Form, Button, Container, Row, Col, Card, Alert, Badge, Spinner } from 'react-bootstrap';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { authApi } from '../api/auth';
 
 const Register = () => {
+  // Get query params (for invitation codes shared via URL)
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const inviteCodeFromUrl = queryParams.get('code');
+
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -12,7 +18,7 @@ const Register = () => {
     password: '',
     confirm_password: '',
     date_of_birth: '',
-    invitation_code: ''
+    invitation_code: inviteCodeFromUrl || ''
   });
   
   const [validationErrors, setValidationErrors] = useState({});
@@ -22,7 +28,7 @@ const Register = () => {
   const { register, error, setError } = useContext(AuthContext);
   const navigate = useNavigate();
   
-  // Validate invitation code when it changes
+  // Validate invitation code when component mounts or code changes
   useEffect(() => {
     const validateInvitationCode = async () => {
       if (!formData.invitation_code || formData.invitation_code.length < 5) {
@@ -38,17 +44,22 @@ const Register = () => {
         console.error("Validation error:", err);
         setCodeInfo({ 
           valid: false, 
-          message: 'Invalid or expired invitation code'
+          message: err.response?.data?.error || 'Invalid or expired invitation code'
         });
       } finally {
         setCodeValidating(false);
       }
     };
     
-    // Debounce the validation to avoid too many API calls
-    const timeoutId = setTimeout(validateInvitationCode, 500);
-    return () => clearTimeout(timeoutId);
-  }, [formData.invitation_code]);
+    // Validate immediately if code comes from URL parameter
+    if (inviteCodeFromUrl) {
+      validateInvitationCode();
+    } else {
+      // Debounce the validation to avoid too many API calls
+      const timeoutId = setTimeout(validateInvitationCode, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [formData.invitation_code, inviteCodeFromUrl]);
   
   const handleChange = (e) => {
     setFormData({
@@ -91,6 +102,11 @@ const Register = () => {
       }
     }
     
+    // If they entered an invitation code but it's not valid, add an error
+    if (formData.invitation_code && codeInfo && !codeInfo.valid) {
+      errors.invitation_code = codeInfo.message || 'Invalid invitation code';
+    }
+    
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -110,8 +126,10 @@ const Register = () => {
     const { confirm_password, ...registerData } = formData;
     
     try {
+      // Pass the registration information to AuthContext
       const success = await register(registerData);
       if (success) {
+        // If registration was successful, navigate to dashboard
         navigate('/dashboard');
       }
     } catch (err) {
@@ -131,6 +149,19 @@ const Register = () => {
               <h2 className="text-center mb-4">Create Account</h2>
               
               {error && <Alert variant="danger">{error}</Alert>}
+              
+              {codeInfo?.valid && (
+                <Alert variant="success" className="mb-4">
+                  <Alert.Heading>Valid Invitation Code</Alert.Heading>
+                  <p>
+                    {codeInfo.role_type === 'master_guide' ? (
+                      <>You'll be registered as a <Badge bg="primary">Master Guide</Badge> and will be able to create your own team.</>
+                    ) : (
+                      <>You'll be registered as a <Badge bg="info">Guide</Badge> {codeInfo.team_name && `for team "${codeInfo.team_name}"`}.</>
+                    )}
+                  </p>
+                </Alert>
+              )}
               
               <Form onSubmit={handleSubmit}>
                 <Row>
@@ -218,6 +249,9 @@ const Register = () => {
                       <Form.Control.Feedback type="invalid">
                         {validationErrors.password}
                       </Form.Control.Feedback>
+                      <Form.Text className="text-muted">
+                        Must be at least 8 characters long
+                      </Form.Text>
                     </Form.Group>
                   </Col>
                   
@@ -241,7 +275,7 @@ const Register = () => {
                 </Row>
                 
                 <Form.Group className="mb-3">
-                  <Form.Label>Invitation Code (Optional)</Form.Label>
+                  <Form.Label>Invitation Code {!inviteCodeFromUrl && '(Optional)'}</Form.Label>
                   <Form.Control
                     type="text"
                     name="invitation_code"
@@ -249,36 +283,31 @@ const Register = () => {
                     onChange={handleChange}
                     placeholder="Enter invitation code if you have one"
                     isValid={codeInfo?.valid}
-                    isInvalid={codeInfo?.valid === false}
+                    isInvalid={codeInfo?.valid === false || !!validationErrors.invitation_code}
+                    disabled={!!inviteCodeFromUrl} // Disable if code comes from URL
                   />
                   {codeValidating && (
-                    <Form.Text className="text-muted">
-                      Validating code...
-                    </Form.Text>
+                    <div className="d-flex align-items-center mt-1">
+                      <Spinner animation="border" size="sm" className="me-2" />
+                      <span className="text-muted">Validating code...</span>
+                    </div>
                   )}
-                  {codeInfo?.valid && (
-                    <Alert variant="success" className="mt-2">
-                      <strong>Valid code!</strong> {' '}
-                      {codeInfo.role_type === 'master_guide' ? (
-                        <>You'll be registered as a <Badge bg="primary">Master Guide</Badge> and will be able to create your own team.</>
-                      ) : (
-                        <>You'll be registered as a <Badge bg="info">Guide</Badge> {codeInfo.team_name && `for team "${codeInfo.team_name}"`}.</>
-                      )}
-                    </Alert>
-                  )}
-                  {codeInfo?.valid === false && (
+                  {!codeValidating && codeInfo?.valid === false && (
                     <Form.Control.Feedback type="invalid">
-                      {codeInfo.message}
+                      {codeInfo.message || 'Invalid invitation code'}
                     </Form.Control.Feedback>
                   )}
-                  <Form.Text className="text-muted">
-                    Required to register as a guide. Leave empty for explorer account.
-                  </Form.Text>
+                  {!inviteCodeFromUrl && (
+                    <Form.Text className="text-muted">
+                      Required to register as a guide. Leave empty for explorer account.
+                    </Form.Text>
+                  )}
                 </Form.Group>
                 
                 <Form.Group className="mb-3">
                   <Form.Check
                     type="checkbox"
+                    id="termsCheck"
                     label="I agree to the Terms of Service and Privacy Policy"
                     required
                   />
@@ -286,7 +315,12 @@ const Register = () => {
                 
                 <div className="d-grid gap-2 mt-4">
                   <Button variant="primary" type="submit" disabled={isLoading}>
-                    {isLoading ? 'Creating account...' : 'Create Account'}
+                    {isLoading ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Creating account...
+                      </>
+                    ) : 'Create Account'}
                   </Button>
                 </div>
               </Form>

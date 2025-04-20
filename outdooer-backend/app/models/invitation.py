@@ -40,7 +40,9 @@ class InvitationCode(db.Model):
             team_id=team_id,
             max_uses=max_uses,
             expires_at=expires_at,
-            created_by=created_by
+            created_by=created_by,
+            is_active=True,
+            used_count=0
         )
 
 

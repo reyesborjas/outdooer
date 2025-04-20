@@ -40,9 +40,6 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const data = await authApi.login({ email, password });
       
-      // Store token in localStorage
-      localStorage.setItem('token', data.access_token);
-      
       // Set user data and auth state
       setUser(data);
       setIsAuthenticated(true);
@@ -59,9 +56,6 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const data = await authApi.register(userData);
       
-      // Store token in localStorage
-      localStorage.setItem('token', data.access_token);
-      
       // Set user data and auth state
       setUser(data);
       setIsAuthenticated(true);
@@ -74,22 +68,22 @@ export const AuthProvider = ({ children }) => {
   
   // Logout function
   const logout = () => {
-    localStorage.removeItem('token');
+    authApi.logout();
     setUser(null);
     setIsAuthenticated(false);
   };
   
   // Helper functions to check user roles
   const isExplorer = () => {
-    return user?.roles.includes('explorer');
+    return user?.roles?.includes('explorer');
   };
   
   const isGuide = () => {
-    return user?.roles.includes('guide');
+    return user?.roles?.includes('guide');
   };
   
   const isAdmin = () => {
-    return user?.roles.includes('admin');
+    return user?.roles?.includes('admin');
   };
   
   // Helper function to get user's role level in a specific team

@@ -6,7 +6,6 @@ from app.models.invitation import InvitationCode, InvitationUsage
 from app.utils.security import generate_password_hash, verify_password
 from flask_jwt_extended import create_access_token, create_refresh_token
 from datetime import datetime, timedelta
-from app.utils.generate_invitation import generate_code as generate_invitation_code
 
 
 class AuthService:
@@ -57,71 +56,159 @@ class AuthService:
             "teams": team_memberships
         }, None
     
-@staticmethod
-def register_with_code(email, password, first_name, last_name, date_of_birth, invitation_code=None):
-    """Register a new user with optional invitation code"""
-    # Check if user already exists
-    if User.query.filter_by(email=email).first():
-        return None, "Email already registered"
+    @staticmethod
+    def register_with_code(email, password, first_name, last_name, date_of_birth, invitation_code=None):
+        """Register a new user with optional invitation code"""
+        # Check if user already exists
+        if User.query.filter_by(email=email).first():
+            return None, "Email already registered"
 
-    # Determinar el rol por defecto o el del código
-    role_type = 'explorer'
-    invitation = None
+        # Initialize variables
+        role_type = 'explorer'  # Default role if no code
+        invitation = None
+        team_data = None
+        new_team = None
 
-    if invitation_code:
-        invitation = InvitationCode.query.filter_by(code=invitation_code, is_active=True).first()
-        if not invitation:
-            return None, "Invalid or expired invitation code"
-        role_type = invitation.role_type
+        # Validate invitation code if provided
+        if invitation_code:
+            invitation = InvitationCode.query.filter_by(code=invitation_code, is_active=True).first()
+            if not invitation:
+                return None, "Invalid or expired invitation code"
+                
+            # Check if invitation has reached max uses
+            if invitation.used_count >= invitation.max_uses:
+                return None, "Invitation code has reached maximum usage limit"
+                
+            # Check if invitation has expired
+            if invitation.expires_at < datetime.utcnow():
+                return None, "Invitation code has expired"
+                
+            # Always set role_type to 'guide' regardless of invitation_code role_type
+            # The specific level (master guide, etc.) is handled in team_members
+            role_type = 'guide'
 
-    try:
-        # Crear el nuevo usuario
-        new_user = User(
-            email=email,
-            password_hash=generate_password_hash(password),
-            first_name=first_name,
-            last_name=last_name,
-            date_of_birth=date_of_birth,
-            account_status='active'
-        )
-        db.session.add(new_user)
-        db.session.flush()  # Para obtener el user_id antes de hacer commit
-
-        # Asignar el rol
-        user_role = UserRole(
-            user_id=new_user.user_id,
-            role_type=role_type
-        )
-        db.session.add(user_role)
-
-        # Si se usó código, registrar el uso
-        if invitation:
-            # Incrementar contador de uso
-            invitation.used_count += 1
-
-            # Registrar el uso del código
-            usage = InvitationUsage(
-                invitation_code_id=invitation.code_id,
-                user_id=new_user.user_id,
-                usage_date=datetime.utcnow()
+        try:
+            # Create the new user
+            new_user = User(
+                email=email,
+                password_hash=generate_password_hash(password),
+                first_name=first_name,
+                last_name=last_name,
+                date_of_birth=date_of_birth,
+                account_status='active'
             )
-            db.session.add(usage)
+            db.session.add(new_user)
+            db.session.flush()  # Get user_id without committing
 
-        db.session.commit()
+            # Assign the role
+            user_role = UserRole(
+                user_id=new_user.user_id,
+                role_type=role_type
+            )
+            db.session.add(user_role)
 
-        # Generar tokens
-        access_token = create_access_token(identity=new_user.user_id)
-        refresh_token = create_refresh_token(identity=new_user.user_id)
+            # If invitation was used, record its usage
+            if invitation:
+                # Increment usage counter
+                invitation.used_count += 1
+                
+                # Record the invitation usage
+                usage = InvitationUsage(
+                    code_id=invitation.code_id,
+                    user_id=new_user.user_id,
+                    used_at=datetime.utcnow()
+                )
+                db.session.add(usage)
+                
+                # Handle team-related operations based on invitation type
+                if invitation.role_type == 'master_guide':
+                    # Create a new team for the master guide
+                    team_name = f"{first_name}'s Team"
+                    
+                    # Check if this team name already exists
+                    existing_team = Team.query.filter_by(team_name=team_name).first()
+                    if existing_team:
+                        team_name = f"{first_name}'s Team {new_user.user_id}"
+                    
+                    new_team = Team(
+                        team_name=team_name,
+                        master_guide_id=new_user.user_id,
+                        team_status='active'
+                    )
+                    db.session.add(new_team)
+                    db.session.flush()  # Get team_id without committing
+                    
+                    # Add user as Master Guide (level 1) in the team
+                    team_member = TeamMember(
+                        team_id=new_team.team_id,
+                        user_id=new_user.user_id,
+                        role_level=1  # Master Guide
+                    )
+                    db.session.add(team_member)
+                    
+                    # Create default role configuration for the team
+                    role_config = TeamRoleConfiguration(
+                        team_id=new_team.team_id,
+                        level_1_name="Master Guide",
+                        level_2_name="Tactical Guide",
+                        level_3_name="Technical Guide",
+                        level_4_name="Base Guide"
+                    )
+                    db.session.add(role_config)
+                    
+                    # Save team data for response
+                    team_data = {
+                        'team_id': new_team.team_id,
+                        'team_name': new_team.team_name,
+                        'role_level': 1,
+                        'is_master_guide': True
+                    }
+                    
+                elif invitation.role_type == 'guide' and invitation.team_id:
+                    # Add the user to the team specified in the invitation
+                    team = Team.query.get(invitation.team_id)
+                    if team:
+                        # Default to level 4 (Base Guide) when joining a team
+                        role_level = 4
+                        
+                        team_member = TeamMember(
+                            team_id=team.team_id,
+                            user_id=new_user.user_id,
+                            role_level=role_level
+                        )
+                        db.session.add(team_member)
+                        
+                        # Save team data for response
+                        team_data = {
+                            'team_id': team.team_id,
+                            'team_name': team.team_name,
+                            'role_level': role_level,
+                            'is_master_guide': False
+                        }
 
-        return {
-            "user_id": new_user.user_id,
-            "first_name": new_user.first_name,
-            "last_name": new_user.last_name,
-            "email": new_user.email,
-            "access_token": access_token,
-            "refresh_token": refresh_token
-        }, None
+            db.session.commit()
 
-    except Exception as e:
-        db.session.rollback()
-        return None, str(e)
+            # Generate tokens
+            access_token = create_access_token(identity=new_user.user_id)
+            refresh_token = create_refresh_token(identity=new_user.user_id)
+
+            # Create response
+            response = {
+                "user_id": new_user.user_id,
+                "first_name": new_user.first_name,
+                "last_name": new_user.last_name,
+                "email": new_user.email,
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "roles": [role_type]
+            }
+            
+            # Add team info if created or joined
+            if team_data:
+                response["teams"] = [team_data]
+
+            return response, None
+
+        except Exception as e:
+            db.session.rollback()
+            return None, f"An error occurred during registration: {str(e)}"

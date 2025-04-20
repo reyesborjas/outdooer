@@ -16,6 +16,12 @@ export const authApi = {
   register: async (userData) => {
     try {
       const response = await api.post('/auth/register', userData);
+      
+      // Store token in localStorage
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+      }
+      
       return response.data;
     } catch (error) {
       console.error('Registration error:', error.response?.data || error.message);
@@ -39,6 +45,16 @@ export const authApi = {
       return response.data;
     } catch (error) {
       console.error('Invitation code validation error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+  
+  getInvitationDetails: async (code) => {
+    try {
+      const response = await api.get(`/invitations/details/${code}`);
+      return response.data;
+    } catch (error) {
+      console.error('Get invitation details error:', error.response?.data || error.message);
       throw error;
     }
   },

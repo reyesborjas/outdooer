@@ -2,7 +2,7 @@
 from flask import jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import invitations_bp
-from app.models.invitation import InvitationCode
+from app.models.invitation import InvitationCode, InvitationUsage
 from app.models.user import User, UserRole
 from app.models.team import Team, TeamMember
 from app import db
@@ -93,4 +93,57 @@ def validate_invitation_code(code):
             response["team_id"] = team.team_id
             response["team_name"] = team.team_name
 
-    return jsonify(response)
+    return jsonify(response), 200
+
+@invitations_bp.route('/details/<code>', methods=['GET'])
+def get_invitation_details(code):
+    """Get detailed information about an invitation code"""
+    invitation = InvitationCode.query.filter_by(code=code).first()
+    
+    if not invitation:
+        return jsonify({"error": "Invitation code not found"}), 404
+        
+    # Get creator information
+    creator = User.query.get(invitation.created_by) if invitation.created_by else None
+    
+    details = {
+        "code": invitation.code,
+        "role_type": invitation.role_type,
+        "is_active": invitation.is_active,
+        "used_count": invitation.used_count,
+        "max_uses": invitation.max_uses,
+        "expires_at": invitation.expires_at.isoformat() if invitation.expires_at else None,
+        "created_at": invitation.created_at.isoformat() if invitation.created_at else None,
+        "created_by": {
+            "user_id": creator.user_id if creator else None,
+            "name": f"{creator.first_name} {creator.last_name}" if creator else "Unknown"
+        },
+        "status": "expired" if invitation.expires_at < datetime.utcnow() else
+                 "used" if invitation.used_count >= invitation.max_uses else
+                 "inactive" if not invitation.is_active else "active"
+    }
+    
+    # Add team info if applicable
+    if invitation.team_id:
+        team = Team.query.get(invitation.team_id)
+        if team:
+            details["team"] = {
+                "team_id": team.team_id,
+                "team_name": team.team_name
+            }
+    
+    # Get usage information
+    usages = InvitationUsage.query.filter_by(code_id=invitation.code_id).all()
+    details["usages"] = []
+    
+    for usage in usages:
+        user = User.query.get(usage.user_id)
+        if user:
+            details["usages"].append({
+                "user_id": user.user_id,
+                "name": f"{user.first_name} {user.last_name}",
+                "email": user.email,
+                "used_at": usage.used_at.isoformat() if usage.used_at else None
+            })
+    
+    return jsonify(details), 200
