@@ -1,14 +1,12 @@
 // src/pages/NewActivity.jsx
 import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { Container, Form, Button, Card, Row, Col, Alert, Spinner } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 import '../styles/ActivityForm.css';
 import SearchableDropdown from '../components/SearchableDropdown';
 import SimilarActivityWarning from '../components/SimilarActivityWarning';
-
-
+import {useNavigate} from 'react-router-dom';
 
 const NewActivity = () => {
   const navigate = useNavigate();
@@ -23,7 +21,8 @@ const NewActivity = () => {
     min_participants: 1,
     max_participants: 10,
     activity_type_id: '',
-    team_id: ''
+    leader_id: '',
+    act_cover_image_url: '' // Campo para URL de imagen
   });
 
   const [loading, setLoading] = useState(false);
@@ -31,23 +30,25 @@ const NewActivity = () => {
   const [success, setSuccess] = useState(false);
   const [locations, setLocations] = useState([]);
   const [activityTypes, setActivityTypes] = useState([]);
-  const [teams, setTeams] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
   const [similarActivities, setSimilarActivities] = useState([]);
   const [checkingSimilar, setCheckingSimilar] = useState(false);
   const [isTitleUnique, setIsTitleUnique] = useState(true);
   const [isTitleChecking, setIsTitleChecking] = useState(false);
+  const [userTeamId, setUserTeamId] = useState(null);
+  const [previewImage, setPreviewImage] = useState('');
 
   const memoizedLocations = useMemo(() => locations, [locations]);
   const memoizedActivityTypes = useMemo(() => activityTypes, [activityTypes]);
 
-  // Check user authorization
+  // Redirigir si el usuario no está autenticado o no es guía
   useEffect(() => {
     if (!isAuthenticated || !isGuide()) {
-      navigate('/unauthorized');
-      return;
+      window.location.href = '/unauthorized';
     }
-  }, [isAuthenticated, isGuide, navigate]);
+  }, [isAuthenticated, isGuide]);
 
   // Fetch necessary data
   useEffect(() => {
@@ -62,10 +63,12 @@ const NewActivity = () => {
 
         setLocations(locationsRes.data.locations || []);
         setActivityTypes(typesRes.data.activity_types || []);
-        setTeams(teamsRes.data.teams || []);
-
-        if (teamsRes.data.teams?.length === 1) {
-          setFormData(prev => ({ ...prev, team_id: teamsRes.data.teams[0].team_id }));
+        
+        // Get user's team if they have one
+        const teams = teamsRes.data.teams || [];
+        if (teams.length > 0) {
+          setUserTeamId(teams[0].team_id);
+          fetchTeamMembers(teams[0].team_id);
         }
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -78,9 +81,39 @@ const NewActivity = () => {
     if (isAuthenticated) fetchData();
   }, [isAuthenticated]);
 
+  // Update preview image when URL changes
+  useEffect(() => {
+    if (formData.act_cover_image_url) {
+      setPreviewImage(formData.act_cover_image_url);
+    } else {
+      setPreviewImage('');
+    }
+  }, [formData.act_cover_image_url]);
+
+  // Fetch team members when user's team is set
+  const fetchTeamMembers = async (teamId) => {
+    if (!teamId) {
+      setTeamMembers([]);
+      return;
+    }
+    
+    try {
+      setLoadingTeamMembers(true);
+      const res = await api.get(`/teams/${teamId}/members`);
+      setTeamMembers(res.data.members || []);
+      
+      // Set the leader to the current user by default
+      setFormData(prev => ({ ...prev, leader_id: user.user_id }));
+    } catch (err) {
+      console.error('Error fetching team members:', err);
+    } finally {
+      setLoadingTeamMembers(false);
+    }
+  };
+
   // Check for similar activities
   useEffect(() => {
-    if (!formData.team_id || !formData.activity_type_id || !formData.location_id) {
+    if (!userTeamId || !formData.activity_type_id || !formData.location_id) {
       setSimilarActivities([]);
       return;
     }
@@ -90,7 +123,7 @@ const NewActivity = () => {
         setCheckingSimilar(true);
         const res = await api.get('/activities/check-similar', {
           params: {
-            team_id: formData.team_id,
+            team_id: userTeamId,
             activity_type_id: formData.activity_type_id,
             location_id: formData.location_id
           }
@@ -105,17 +138,20 @@ const NewActivity = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.team_id, formData.activity_type_id, formData.location_id]);
+  }, [userTeamId, formData.activity_type_id, formData.location_id]);
 
   // Check for unique title
   useEffect(() => {
-    if (!formData.title || !formData.team_id) return;
+    if (!formData.title || !userTeamId) {
+      setIsTitleUnique(true);
+      return;
+    }
 
     const timeoutId = setTimeout(async () => {
       try {
         setIsTitleChecking(true);
         const res = await api.get('/activities/check-title', {
-          params: { title: formData.title, team_id: formData.team_id }
+          params: { title: formData.title, team_id: userTeamId }
         });
         setIsTitleUnique(res.data.unique);
       } catch (err) {
@@ -127,7 +163,7 @@ const NewActivity = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.title, formData.team_id]);
+  }, [formData.title, userTeamId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -139,7 +175,6 @@ const NewActivity = () => {
     }));
   };
 
-  // Fixed handleSubmit function for your NewActivity.jsx component
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -157,7 +192,6 @@ const NewActivity = () => {
         ...formData,
         created_by: user.user_id,
         leader_id: formData.leader_id || user.user_id,
-        activity_type_id: formData.activity_type_id,
       };
   
       console.log('Sending data to server:', payload);
@@ -168,9 +202,10 @@ const NewActivity = () => {
       setLoading(false);
       setSuccess(true);
       
+      // After successful creation, redirect to MyActivities page after a short delay
       setTimeout(() => {
-        navigate(`/activities/${res.data.activity_id}`);
-      }, 1000);
+        window.location.href = '/my-activities';
+      }, 1500);
     } catch (err) {
       console.error('Error creating activity:', err);
       setError(err.response?.data?.error || 'Failed to create activity.');
@@ -178,71 +213,30 @@ const NewActivity = () => {
     }
   };
 
-// Also add this to your form:
-<div className="d-flex justify-content-between mt-4">
-  <Button 
-    variant="outline-secondary" 
-    onClick={() => window.location.href = '/activities'}
-    type="button"
-  >
-    Cancel
-  </Button>
-  <Button 
-    variant="primary"
-    type="submit" 
-    disabled={loading}
-  >
-    {loading ? (
-      <>
-        <Spinner animation="border" size="sm" className="me-2" />
-        Creating...
-      </>
-    ) : 'Create Activity'}
-  </Button>
-</div>
-  const handleCancel = () => {
-    // Use direct navigation as a more reliable method
-    window.location.href = '/activities';
+  // Redirigir directamente a My Activities
+  const handleGoToMyActivities = () => {
+    navigate('/my-activities');
   };
 
   if (!isAuthenticated) return null;
 
-  // Add these state variables
-const [teamMembers, setTeamMembers] = useState([]);
-const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
-
-// Add this effect to fetch team members when a team is selected
-useEffect(() => {
-  const fetchTeamMembers = async () => {
-    if (!formData.team_id) {
-      setTeamMembers([]);
-      return;
-    }
-    
-    try {
-      setLoadingTeamMembers(true);
-      const res = await api.get(`/teams/${formData.team_id}/members`);
-      setTeamMembers(res.data.members || []);
-    } catch (err) {
-      console.error('Error fetching team members:', err);
-    } finally {
-      setLoadingTeamMembers(false);
-    }
-  };
-  
-  if (formData.team_id) {
-    fetchTeamMembers();
-  }
-}, [formData.team_id]);
-
   return (
     <Container className="py-4 activity-form-container">
       <Card className="shadow-sm">
-        <Card.Header as="h1" className="text-center">Create New Activity</Card.Header>
+        <Card.Header className="d-flex justify-content-between align-items-center">
+          <h1 className="mb-0">Create New Activity</h1>
+          <button 
+            type="button" 
+            className="btn btn-outline-secondary"
+            onClick={handleGoToMyActivities}
+          >
+            Back to My Activities
+          </button>
+        </Card.Header>
         <Card.Body>
           {success && (
             <Alert variant="success">
-              Activity created successfully! Redirecting...
+              Activity created successfully! Redirecting to your activities...
             </Alert>
           )}
           
@@ -253,48 +247,27 @@ useEffect(() => {
           )}
 
           <Form onSubmit={handleSubmit}>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Activity Title*</Form.Label>
-                  <Form.Control
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    required
-                    placeholder="E.g., Mountain Hiking"
-                    isValid={formData.title && isTitleUnique}
-                    isInvalid={formData.title && !isTitleUnique}
-                  />
-                  {isTitleChecking && (
-                    <Form.Text className="text-muted">Checking title availability...</Form.Text>
-                  )}
-                  {!isTitleUnique && (
-                    <Form.Control.Feedback type="invalid">
-                      This title already exists in your team.
-                    </Form.Control.Feedback>
-                  )}
-                </Form.Group>
-              </Col>
-
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Team*</Form.Label>
-                  <Form.Select
-                    name="team_id"
-                    value={formData.team_id}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Team</option>
-                    {teams.map(team => (
-                      <option key={team.team_id} value={team.team_id}>{team.team_name}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-            </Row>
+            <Form.Group className="mb-3">
+              <Form.Label>Activity Title*</Form.Label>
+              <Form.Control
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                required
+                placeholder="E.g., Mountain Hiking"
+                isValid={formData.title && isTitleUnique}
+                isInvalid={formData.title && !isTitleUnique}
+              />
+              {isTitleChecking && (
+                <Form.Text className="text-muted">Checking title availability...</Form.Text>
+              )}
+              {!isTitleUnique && (
+                <Form.Control.Feedback type="invalid">
+                  This title already exists in your team.
+                </Form.Control.Feedback>
+              )}
+            </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label>Description*</Form.Label>
@@ -312,7 +285,7 @@ useEffect(() => {
             <Row>
               <Col md={6}>
                 <SearchableDropdown
-                  label="Location"
+                  label="Location*"
                   items={memoizedLocations}
                   onSelect={value => handleChange({ target: { name: 'location_id', value } })}
                   value={formData.location_id}
@@ -329,7 +302,7 @@ useEffect(() => {
 
               <Col md={6}>
                 <SearchableDropdown
-                  label="Activity Type"
+                  label="Activity Type*"
                   items={memoizedActivityTypes}
                   onSelect={value => handleChange({ target: { name: 'activity_type_id', value } })}
                   value={formData.activity_type_id}
@@ -389,59 +362,113 @@ useEffect(() => {
               </Col>
             </Row>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Difficulty Level*</Form.Label>
-              <Form.Select
-                name="difficulty_level"
-                value={formData.difficulty_level}
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Difficulty Level*</Form.Label>
+                  <Form.Select
+                    name="difficulty_level"
+                    value={formData.difficulty_level}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="difficult">Difficult</option>
+                    <option value="extreme">Extreme</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Activity Leader*</Form.Label>
+                  <Form.Select
+                    name="leader_id"
+                    value={formData.leader_id || user.user_id}
+                    onChange={handleChange}
+                    required
+                    disabled={loadingTeamMembers || teamMembers.length === 0}
+                  >
+                    <option value={user.user_id}>Me (Default)</option>
+                    {teamMembers
+                      .filter(member => member.user_id !== user.user_id)
+                      .map(member => (
+                        <option key={member.user_id} value={member.user_id}>
+                          {member.first_name} {member.last_name} - {
+                            member.role_level === 1 ? 'Master Guide' :
+                            member.role_level === 2 ? 'Tactical Guide' :
+                            member.role_level === 3 ? 'Technical Guide' : 'Base Guide'
+                          }
+                        </option>
+                      ))}
+                  </Form.Select>
+                  {loadingTeamMembers && <Form.Text>Loading team members...</Form.Text>}
+                  {teamMembers.length === 0 && <Form.Text>No team members available</Form.Text>}
+                </Form.Group>
+              </Col>
+            </Row>
+
+            {/* Campo para URL de imagen de portada */}
+            <Form.Group className="mb-4">
+              <Form.Label>Cover Image URL</Form.Label>
+              <Form.Control
+                type="text"
+                name="act_cover_image_url"
+                value={formData.act_cover_image_url}
                 onChange={handleChange}
-                required
-              >
-                <option value="easy">Easy</option>
-                <option value="moderate">Moderate</option>
-                <option value="hard">Hard</option>
-              </Form.Select>
+                placeholder="Enter URL for activity cover image"
+              />
+              <Form.Text className="text-muted">
+                Provide a URL to an image that represents this activity
+              </Form.Text>
+              
+              {previewImage && (
+                <div className="mt-2">
+                  <p className="mb-1">Image Preview:</p>
+                  <div 
+                    style={{
+                      width: '100%',
+                      maxWidth: '300px',
+                      height: '150px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}
+                  >
+                    <img 
+                      src={previewImage} 
+                      alt="Cover preview" 
+                      style={{
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover',
+                      }}
+                      onError={(e) => {
+                        e.target.onerror = null; 
+                        e.target.src = 'https://via.placeholder.com/300x150?text=Invalid+Image+URL';
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </Form.Group>
-            <Form.Group className="mb-3">
-  <Form.Label>Activity Leader*</Form.Label>
-  <Form.Select
-    name="leader_id"
-    value={formData.leader_id || user.user_id}
-    onChange={handleChange}
-    required
-    disabled={loadingTeamMembers}
-  >
-    <option value={user.user_id}>Me (Default)</option>
-    {teamMembers
-      .filter(member => member.user_id !== user.user_id)
-      .map(member => (
-        <option key={member.user_id} value={member.user_id}>
-          {member.first_name} {member.last_name} - {
-            member.role_level === 1 ? 'Master Guide' :
-            member.role_level === 2 ? 'Tactical Guide' :
-            member.role_level === 3 ? 'Technical Guide' : 'Base Guide'
-          }
-        </option>
-      ))}
-  </Form.Select>
-  {loadingTeamMembers && <Form.Text>Loading team members...</Form.Text>}
-  <Form.Text className="text-muted">
-    Select who will lead this activity.
-  </Form.Text>
-</Form.Group>
+
             {checkingSimilar && <p>Checking for similar activities...</p>}
             {similarActivities.length > 0 && (
               <SimilarActivityWarning activities={similarActivities} />
             )}
 
             <div className="d-flex justify-content-between mt-4">
-              <Button 
-                variant="outline-secondary" 
-                onClick={handleCancel}
+              {/* Botón que usa window.location.href directamente */}
+              <button 
                 type="button"
+                className="btn btn-outline-secondary"
+                onClick={handleGoToMyActivities}
               >
                 Cancel
-              </Button>
+              </button>
               <Button 
                 variant="primary" 
                 type="submit" 

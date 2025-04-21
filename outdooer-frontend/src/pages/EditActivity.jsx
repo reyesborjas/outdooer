@@ -22,9 +22,9 @@ const EditActivity = () => {
     min_participants: 1,
     max_participants: 10,
     activity_type_id: '',
-    team_id: '',
     activity_status: 'active',
-    leader_id: ''
+    leader_id: '',
+    act_cover_image_url: ''
   });
 
   const [originalTitle, setOriginalTitle] = useState('');
@@ -84,15 +84,17 @@ const EditActivity = () => {
           min_participants: activityData.min_participants,
           max_participants: activityData.max_participants,
           activity_type_id: activityData.activity_type_id,
-          team_id: activityData.team_id,
           activity_status: activityData.activity_status,
-          leader_id: activityData.leader_id
+          leader_id: activityData.leader_id,
+          act_cover_image_url: activityData.act_cover_image_url || ''
         });
         
         setOriginalTitle(activityData.title);
         
-        // Fetch team members for this team
-        fetchTeamMembers(activityData.team_id);
+        // Fetch team members if activity has a team
+        if (activityData.team_id) {
+          fetchTeamMembers(activityData.team_id);
+        }
       } catch (err) {
         console.error('Error fetching activity:', err);
         setError('Failed to fetch activity data. Please try again.');
@@ -113,8 +115,8 @@ const EditActivity = () => {
     try {
       setLoadingTeamMembers(true);
       const response = await fetch(`/teams/${teamId}/members`);
-      const data = await response.json();
-      setTeamMembers(data.members || []);
+      setTeamMembers(response.data.members || []);
+
     } catch (err) {
       console.error('Error fetching team members:', err);
     } finally {
@@ -150,7 +152,7 @@ const EditActivity = () => {
 
   // Check for similar activities
   useEffect(() => {
-    if (!formData.team_id || !formData.activity_type_id || !formData.location_id) {
+    if (!originalActivity?.team_id || !formData.activity_type_id || !formData.location_id) {
       setSimilarActivities([]);
       return;
     }
@@ -159,7 +161,7 @@ const EditActivity = () => {
       try {
         setCheckingSimilar(true);
         const result = await activitiesApi.checkSimilarActivities(
-          formData.team_id,
+          originalActivity.team_id,
           formData.activity_type_id,
           formData.location_id,
           activityId // Exclude current activity
@@ -174,11 +176,11 @@ const EditActivity = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.team_id, formData.activity_type_id, formData.location_id, activityId]);
+  }, [formData.activity_type_id, formData.location_id, activityId, originalActivity]);
 
   // Check for unique title
   useEffect(() => {
-    if (!formData.title || !formData.team_id || formData.title === originalTitle) {
+    if (!formData.title || !originalActivity?.team_id || formData.title === originalTitle) {
       setIsTitleUnique(true);
       return;
     }
@@ -188,7 +190,7 @@ const EditActivity = () => {
         setIsTitleChecking(true);
         const result = await activitiesApi.checkActivityTitle(
           formData.title, 
-          formData.team_id,
+          originalActivity.team_id,
           activityId
         );
         setIsTitleUnique(result.unique);
@@ -201,7 +203,7 @@ const EditActivity = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.title, formData.team_id, originalTitle, activityId]);
+  }, [formData.title, originalActivity, originalTitle, activityId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -232,9 +234,9 @@ const EditActivity = () => {
       setLoading(false);
       setSuccess(true);
       
-      // Navigate back to activity details after short delay
+      // Navigate to MyActivities after short delay
       setTimeout(() => {
-        navigate(`/activities/${activityId}`);
+        navigate('/my-activities');
       }, 1500);
     } catch (err) {
       console.error('Error updating activity:', err);
@@ -244,7 +246,7 @@ const EditActivity = () => {
   };
 
   const handleCancel = () => {
-    navigate(`/activities/${activityId}`);
+    navigate('/my-activities');
   };
 
   if (!isAuthenticated || fetchingActivity) {
@@ -270,7 +272,7 @@ const EditActivity = () => {
   }
 
   // Check if user is Base Guide and trying to assign leader
-  const isBaseGuide = user?.teams?.find(team => team.team_id === formData.team_id)?.role_level === 4;
+  const isBaseGuide = user?.teams?.find(team => team.team_id === originalActivity?.team_id)?.role_level === 4;
   const canAssignLeader = (leaderId) => {
     if (!isBaseGuide) return true;
     
@@ -298,7 +300,7 @@ const EditActivity = () => {
 
           <Form onSubmit={handleSubmit}>
             <Row>
-              <Col md={6}>
+              <Col>
                 <Form.Group className="mb-3">
                   <Form.Label>Activity Title*</Form.Label>
                   <Form.Control
@@ -321,22 +323,26 @@ const EditActivity = () => {
                   )}
                 </Form.Group>
               </Col>
-
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Team*</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={originalActivity?.team_name || ''}
-                    disabled
-                    readOnly
-                  />
-                  <Form.Text className="text-muted">
-                    Team cannot be changed once an activity is created.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
             </Row>
+
+            {originalActivity?.team_id && (
+              <Row>
+                <Col>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Team</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={originalActivity?.team_name || ''}
+                      disabled
+                      readOnly
+                    />
+                    <Form.Text className="text-muted">
+                      Team cannot be changed once an activity is created.
+                    </Form.Text>
+                  </Form.Group>
+                </Col>
+              </Row>
+            )}
 
             <Form.Group className="mb-3">
               <Form.Label>Description*</Form.Label>
@@ -467,41 +473,57 @@ const EditActivity = () => {
               </Col>
             </Row>
 
+            {originalActivity?.team_id && (
+              <Form.Group className="mb-3">
+                <Form.Label>Activity Leader*</Form.Label>
+                <Form.Select
+                  name="leader_id"
+                  value={formData.leader_id || user.user_id}
+                  onChange={handleChange}
+                  required
+                  disabled={loadingTeamMembers}
+                  isInvalid={isBaseGuide && formData.leader_id && !canAssignLeader(formData.leader_id)}
+                >
+                  {teamMembers.map(member => (
+                    <option 
+                      key={member.user_id} 
+                      value={member.user_id}
+                      disabled={isBaseGuide && member.role_level > 2}
+                    >
+                      {member.first_name} {member.last_name} - {
+                        member.role_level === 1 ? 'Master Guide' :
+                        member.role_level === 2 ? 'Tactical Guide' :
+                        member.role_level === 3 ? 'Technical Guide' : 'Base Guide'
+                      }
+                    </option>
+                  ))}
+                </Form.Select>
+                {loadingTeamMembers && <Form.Text>Loading team members...</Form.Text>}
+                {isBaseGuide && (
+                  <Form.Text className="text-muted">
+                    As a Base Guide, you can only assign Master Guides or Tactical Guides as leaders.
+                  </Form.Text>
+                )}
+                {isBaseGuide && formData.leader_id && !canAssignLeader(formData.leader_id) && (
+                  <Form.Control.Feedback type="invalid">
+                    Base Guides can only assign Master Guides or Tactical Guides as leaders.
+                  </Form.Control.Feedback>
+                )}
+              </Form.Group>
+            )}
+
             <Form.Group className="mb-3">
-              <Form.Label>Activity Leader*</Form.Label>
-              <Form.Select
-                name="leader_id"
-                value={formData.leader_id}
+              <Form.Label>Cover Image URL</Form.Label>
+              <Form.Control
+                type="text"
+                name="act_cover_image_url"
+                value={formData.act_cover_image_url}
                 onChange={handleChange}
-                required
-                disabled={loadingTeamMembers}
-                isInvalid={isBaseGuide && formData.leader_id && !canAssignLeader(formData.leader_id)}
-              >
-                {teamMembers.map(member => (
-                  <option 
-                    key={member.user_id} 
-                    value={member.user_id}
-                    disabled={isBaseGuide && member.role_level > 2}
-                  >
-                    {member.first_name} {member.last_name} - {
-                      member.role_level === 1 ? 'Master Guide' :
-                      member.role_level === 2 ? 'Tactical Guide' :
-                      member.role_level === 3 ? 'Technical Guide' : 'Base Guide'
-                    }
-                  </option>
-                ))}
-              </Form.Select>
-              {loadingTeamMembers && <Form.Text>Loading team members...</Form.Text>}
-              {isBaseGuide && (
-                <Form.Text className="text-muted">
-                  As a Base Guide, you can only assign Master Guides or Tactical Guides as leaders.
-                </Form.Text>
-              )}
-              {isBaseGuide && formData.leader_id && !canAssignLeader(formData.leader_id) && (
-                <Form.Control.Feedback type="invalid">
-                  Base Guides can only assign Master Guides or Tactical Guides as leaders.
-                </Form.Control.Feedback>
-              )}
+                placeholder="URL to cover image (optional)"
+              />
+              <Form.Text className="text-muted">
+                Provide a URL to an image that represents this activity
+              </Form.Text>
             </Form.Group>
 
             {checkingSimilar && <p>Checking for similar activities...</p>}

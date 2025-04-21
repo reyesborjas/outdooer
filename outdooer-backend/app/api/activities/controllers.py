@@ -86,6 +86,8 @@ def get_my_activities():
         print(f"Error fetching user activities: {str(e)}")
         return jsonify({'error': f'Failed to fetch user activities: {str(e)}'}), 500
 
+# app/api/activities/controllers.py - Función create_activity modificada
+
 def create_activity():
     """Create a new activity"""
     try:
@@ -94,9 +96,18 @@ def create_activity():
             data['created_by'] = get_jwt_identity()
         
         current_user_id = data['created_by']
-        team_id = data.get('team_id')
         
-        # Verify the user has permission to create activities in this team
+        # Get user's team_id from their team membership
+        team_id = None
+        if 'team_id' not in data or not data['team_id']:
+            # Find first team where the user is a member
+            team_membership = TeamMember.query.filter_by(user_id=current_user_id).first()
+            if team_membership:
+                team_id = team_membership.team_id
+        else:
+            team_id = data['team_id']
+        
+        # Verify the user has permission to create activities in this team (if a team is assigned)
         if team_id:
             membership = TeamMember.query.filter_by(
                 user_id=current_user_id, 
@@ -106,16 +117,14 @@ def create_activity():
             if not membership:
                 return jsonify({"error": "You are not a member of this team"}), 403
             
-            # All guide levels can create activities
+            # Check for duplicate activity title in the same team
+            existing_activity = Activity.query.filter_by(
+                team_id=team_id,
+                title=data.get('title')
+            ).first()
             
-        # Check for duplicate activity title in the same team
-        existing_activity = Activity.query.filter_by(
-            team_id=team_id,
-            title=data.get('title')
-        ).first()
-        
-        if existing_activity:
-            return jsonify({"error": "An activity with this name already exists in your team"}), 400
+            if existing_activity:
+                return jsonify({"error": "An activity with this name already exists in your team"}), 400
 
         # Validate location exists
         location_id = data.get('location_id')
@@ -135,9 +144,9 @@ def create_activity():
         if 'leader_id' not in data:
             data['leader_id'] = current_user_id
         
-        # Validate leader_id based on role level
+        # Validate leader_id based on role level (only if team exists)
         leader_id = data.get('leader_id')
-        if leader_id != current_user_id:
+        if leader_id != current_user_id and team_id:
             leader_membership = TeamMember.query.filter_by(
                 user_id=leader_id, 
                 team_id=team_id
@@ -158,7 +167,7 @@ def create_activity():
 
         new_activity = Activity(
             title=data.get('title'),
-            team_id=team_id,
+            team_id=team_id,  # Can be None for guides without a team
             description=data.get('description'),
             location_id=location_id,
             difficulty_level=data.get('difficulty_level'),
@@ -168,7 +177,8 @@ def create_activity():
             activity_type_id=activity_type_id,
             leader_id=leader_id,
             activity_status=data.get('activity_status', 'active'),
-            created_by=data.get('created_by')
+            created_by=data.get('created_by'),
+            act_cover_image_url=data.get('act_cover_image_url')
         )
 
         db.session.add(new_activity)
@@ -184,6 +194,8 @@ def create_activity():
         db.session.rollback()
         print(f"Error creating activity: {str(e)}")
         return jsonify({"error": f"Failed to create activity: {str(e)}"}), 500
+    
+# app/api/activities/controllers.py - Función update_activity modificada
 
 def update_activity(activity_id):
     """Update an existing activity"""
@@ -192,32 +204,38 @@ def update_activity(activity_id):
         current_user_id = get_jwt_identity()
         activity = Activity.query.get_or_404(activity_id)
         
-        # Check authorization based on role level
-        team_membership = TeamMember.query.filter_by(
-            user_id=current_user_id, 
-            team_id=activity.team_id
-        ).first()
-        
-        if not team_membership:
-            return jsonify({"error": "You are not a member of this team"}), 403
+        # Check authorization based on role level if activity has a team
+        if activity.team_id:
+            team_membership = TeamMember.query.filter_by(
+                user_id=current_user_id, 
+                team_id=activity.team_id
+            ).first()
             
-        # Master Guide (Level 1) and Tactical Guide (Level 2) can edit any activity
-        # Technical Guide (Level 3) can only edit activities they created or lead
-        # Base Guide (Level 4) can only edit activities they created
-        if team_membership.role_level > 2:
-            if team_membership.role_level == 3:
-                if activity.created_by != current_user_id and activity.leader_id != current_user_id:
-                    return jsonify({"error": "Technical Guides can only edit activities they created or lead"}), 403
-            elif team_membership.role_level == 4:
-                if activity.created_by != current_user_id:
-                    return jsonify({"error": "Base Guides can only edit activities they created"}), 403
+            if not team_membership:
+                return jsonify({"error": "You are not a member of this team"}), 403
+                
+            # Master Guide (Level 1) and Tactical Guide (Level 2) can edit any activity
+            # Technical Guide (Level 3) can only edit activities they created or lead
+            # Base Guide (Level 4) can only edit activities they created
+            if team_membership.role_level > 2:
+                if team_membership.role_level == 3:
+                    if activity.created_by != current_user_id and activity.leader_id != current_user_id:
+                        return jsonify({"error": "Technical Guides can only edit activities they created or lead"}), 403
+                elif team_membership.role_level == 4:
+                    if activity.created_by != current_user_id:
+                        return jsonify({"error": "Base Guides can only edit activities they created"}), 403
+        else:
+            # For activities without a team, only the creator can edit
+            if activity.created_by != current_user_id:
+                return jsonify({"error": "Only the creator can edit this activity"}), 403
 
-        # Check for duplicate title if changed
-        if 'title' in data and data['title'] != activity.title:
+        # Check for duplicate title if changed and activity has a team
+        if 'title' in data and data['title'] != activity.title and activity.team_id:
             existing_activity = Activity.query.filter_by(
                 team_id=activity.team_id,
                 title=data['title']
-            ).first()
+            ).filter(Activity.activity_id != activity_id).first()
+            
             if existing_activity:
                 return jsonify({"error": "An activity with this name already exists in your team"}), 400
 
@@ -233,10 +251,15 @@ def update_activity(activity_id):
             if not activity_type:
                 return jsonify({"error": f"Activity type with ID {data['activity_type_id']} not found"}), 400
         
-        # Check leader assignment permission
-        if 'leader_id' in data and data['leader_id'] != activity.leader_id:
+        # Check leader assignment permission if activity has a team
+        if 'leader_id' in data and data['leader_id'] != activity.leader_id and activity.team_id:
             # Base Guide can only assign Master or Tactical Guide as leaders
-            if team_membership.role_level == 4:
+            team_membership = TeamMember.query.filter_by(
+                user_id=current_user_id, 
+                team_id=activity.team_id
+            ).first()
+            
+            if team_membership and team_membership.role_level == 4:
                 leader_membership = TeamMember.query.filter_by(
                     user_id=data['leader_id'], 
                     team_id=activity.team_id
@@ -249,7 +272,7 @@ def update_activity(activity_id):
         for field in [
             'title', 'description', 'location_id', 'difficulty_level',
             'price', 'min_participants', 'max_participants',
-            'activity_type_id', 'leader_id', 'activity_status'
+            'activity_type_id', 'leader_id', 'activity_status', 'act_cover_image_url'
         ]:
             if field in data:
                 setattr(activity, field, data[field])
@@ -267,7 +290,7 @@ def update_activity(activity_id):
         db.session.rollback()
         print(f"Error updating activity {activity_id}: {str(e)}")
         return jsonify({"error": f"Failed to update activity: {str(e)}"}), 500
-
+    
 def delete_activity(activity_id):
     """Delete an activity"""
     try:

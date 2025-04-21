@@ -1,8 +1,8 @@
 // src/layouts/MainLayout.jsx
 import { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
+import Sidebar from '../Sidebar';
 import { Outlet } from 'react-router-dom';
-import '../styles/App.css'; // si usás las clases .app-container, etc.
+import '/src/App.css'; // si usás las clases .app-container, etc.
 
 const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);

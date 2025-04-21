@@ -7,7 +7,7 @@ class Activity(db.Model):
     __tablename__ = 'activities'
     
     activity_id = db.Column(db.Integer, primary_key=True)
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=True)
     location_id = db.Column(db.Integer, db.ForeignKey('locations.location_id'))
     activity_type_id = db.Column(db.Integer, db.ForeignKey('activity_types.activity_type_id'))
     title = db.Column(db.String(255), nullable=False)
@@ -21,6 +21,7 @@ class Activity(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     activity_status = db.Column(db.String(20), default='active')
+    act_cover_image_url = db.Column(db.String(255))
     
     # Relationships
     location = db.relationship('Location', back_populates='activities')
@@ -47,6 +48,7 @@ class Activity(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "activity_status": self.activity_status,
+            "act_cover_image_url": self.act_cover_image_url,
             # Include relationship data
             "location_name": self.location.location_name if self.location else None,
             "activity_type_name": self.activity_type.activity_type_name if self.activity_type else None,

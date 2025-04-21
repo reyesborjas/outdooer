@@ -1,8 +1,9 @@
 // src/App.jsx
 import { useState, useEffect } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import {BrowserRouter} from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Router from './Router';
+
 import Sidebar from './components/Sidebar';
 import './styles/App.css';
 

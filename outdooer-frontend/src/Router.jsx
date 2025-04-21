@@ -36,6 +36,7 @@ const Router = () => {
       {/* Protected routes (require authentication) */}
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/activities/:activityId/edit" element={<EditActivity />} />
         <Route path="/profile" element={<div>Profile (Coming Soon)</div>} />
         <Route path="/settings" element={<div>Settings (Coming Soon)</div>} />
       </Route>
