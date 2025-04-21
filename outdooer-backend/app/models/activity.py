@@ -23,42 +23,62 @@ class Activity(db.Model):
     activity_status = db.Column(db.String(20), default='active')
     act_cover_image_url = db.Column(db.String(255))
     
-    # Relationships
+    # Relaciones
     location = db.relationship('Location', back_populates='activities')
     team = db.relationship('Team', back_populates='activities')
-    creator = db.relationship('User', foreign_keys=[created_by], back_populates='created_activities')
-    leader = db.relationship('User', foreign_keys=[leader_id], back_populates='led_activities')
+    # Las relaciones con User se definen en user.py para evitar circularidad
     activity_type = db.relationship('ActivityType', backref='activities')
 
     def to_dict(self):
         """Convert the Activity model to a dictionary."""
-        return {
-            "activity_id": self.activity_id,
-            "team_id": self.team_id,
-            "location_id": self.location_id,
-            "activity_type_id": self.activity_type_id,
-            "title": self.title,
-            "description": self.description,
-            "min_participants": self.min_participants,
-            "max_participants": self.max_participants,
-            "price": str(self.price),  # Convert to string for JSON serialization
-            "difficulty_level": self.difficulty_level,
-            "created_by": self.created_by,
-            "leader_id": self.leader_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            "activity_status": self.activity_status,
-            "act_cover_image_url": self.act_cover_image_url,
-            # Include relationship data
-            "location_name": self.location.location_name if self.location else None,
-            "activity_type_name": self.activity_type.activity_type_name if self.activity_type else None,
+        try:
+            activity_dict = {
+                "activity_id": self.activity_id,
+                "team_id": self.team_id,
+                "location_id": self.location_id,
+                "activity_type_id": self.activity_type_id,
+                "title": self.title,
+                "description": self.description,
+                "min_participants": self.min_participants,
+                "max_participants": self.max_participants,
+                "price": str(self.price),  # Convert to string for JSON serialization
+                "difficulty_level": self.difficulty_level,
+                "created_by": self.created_by,
+                "leader_id": self.leader_id,
+                "created_at": self.created_at.isoformat() if self.created_at else None,
+                "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+                "activity_status": self.activity_status,
+                "act_cover_image_url": self.act_cover_image_url,
+            }
+            
+            # Include relationship data safely
+            activity_dict["location_name"] = self.location.location_name if self.location else None
+            activity_dict["activity_type_name"] = self.activity_type.activity_type_name if self.activity_type else None
+            
             # Include leader name if available
-            "leader_name": f"{self.leader.first_name} {self.leader.last_name}" if self.leader else None,
+            if hasattr(self, 'leader') and self.leader:
+                activity_dict["leader_name"] = f"{self.leader.first_name} {self.leader.last_name}"
+            else:
+                activity_dict["leader_name"] = None
+                
             # Include creator name if available
-            "creator_name": f"{self.creator.first_name} {self.creator.last_name}" if self.creator else None,
+            if hasattr(self, 'creator') and self.creator:
+                activity_dict["creator_name"] = f"{self.creator.first_name} {self.creator.last_name}"
+            else:
+                activity_dict["creator_name"] = None
+                
             # Include team name if available
-            "team_name": self.team.team_name if self.team else None
-        }
+            activity_dict["team_name"] = self.team.team_name if self.team else None
+            
+            return activity_dict
+        except Exception as e:
+            print(f"Error in to_dict: {str(e)}")
+            # Retornar un diccionario básico en caso de error
+            return {
+                "activity_id": self.activity_id,
+                "title": self.title,
+                "error": "Could not serialize complete activity data"
+            }
 
 
 def find_similar_activities(team_id, activity_type_id, location_id, exclude_activity_id=None):

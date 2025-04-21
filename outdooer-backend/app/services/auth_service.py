@@ -67,7 +67,6 @@ class AuthService:
         role_type = 'explorer'  # Default role if no code
         invitation = None
         team_data = None
-        new_team = None
 
         # Validate invitation code if provided
         if invitation_code:
@@ -83,8 +82,7 @@ class AuthService:
             if invitation.expires_at < datetime.utcnow():
                 return None, "Invitation code has expired"
                 
-            # Always set role_type to 'guide' regardless of invitation_code role_type
-            # The specific level (master guide, etc.) is handled in team_members
+            # Set role_type to 'guide' if using invitation code
             role_type = 'guide'
 
         try:
@@ -138,15 +136,7 @@ class AuthService:
                     db.session.add(new_team)
                     db.session.flush()  # Get team_id without committing
                     
-                    # Add user as Master Guide (level 1) in the team
-                    team_member = TeamMember(
-                        team_id=new_team.team_id,
-                        user_id=new_user.user_id,
-                        role_level=1  # Master Guide
-                    )
-                    db.session.add(team_member)
-                    
-                    # Create default role configuration for the team
+                    # Create default role configuration for the team - IMPORTANT
                     role_config = TeamRoleConfiguration(
                         team_id=new_team.team_id,
                         level_1_name="Master Guide",
@@ -155,6 +145,15 @@ class AuthService:
                         level_4_name="Base Guide"
                     )
                     db.session.add(role_config)
+                    
+                    # Add user as Master Guide (level 1) in the team - IMPORTANT
+                    team_member = TeamMember(
+                        team_id=new_team.team_id,
+                        user_id=new_user.user_id,
+                        role_level=1,  # Master Guide
+                        joined_at=datetime.utcnow()
+                    )
+                    db.session.add(team_member)
                     
                     # Save team data for response
                     team_data = {
@@ -174,7 +173,8 @@ class AuthService:
                         team_member = TeamMember(
                             team_id=team.team_id,
                             user_id=new_user.user_id,
-                            role_level=role_level
+                            role_level=role_level,
+                            joined_at=datetime.utcnow()
                         )
                         db.session.add(team_member)
                         
@@ -186,6 +186,7 @@ class AuthService:
                             'is_master_guide': False
                         }
 
+            # Explicitly commit the transaction to ensure all records are saved
             db.session.commit()
 
             # Generate tokens

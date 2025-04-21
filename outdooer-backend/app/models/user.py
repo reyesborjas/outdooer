@@ -20,11 +20,13 @@ class User(db.Model):
     national_id = db.Column(db.String(20))
     phone_number = db.Column(db.String(20))
     account_status = db.Column(db.String(20), default='active')
-    created_activities = db.relationship('Activity', foreign_keys='Activity.created_by', back_populates='creator')
-    led_activities = db.relationship('Activity', foreign_keys='Activity.leader_id', back_populates='leader')
     
-    # Relationships
+    # Relaciones
+    # Usar strings para relaciones para resolver dependencias circulares
+    created_activities = db.relationship('Activity', foreign_keys='Activity.created_by', backref='creator')
+    led_activities = db.relationship('Activity', foreign_keys='Activity.leader_id', backref='leader')
     roles = db.relationship('UserRole', backref='user', lazy='dynamic')
+    team_memberships = db.relationship('TeamMember', backref='user', lazy='dynamic')
     
     def __repr__(self):
         return f'<User {self.email}>'

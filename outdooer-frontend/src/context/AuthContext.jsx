@@ -40,6 +40,11 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const data = await authApi.login({ email, password });
       
+      // Store token in localStorage
+      if (data.access_token) {
+        localStorage.setItem('token', data.access_token);
+      }
+      
       // Set user data and auth state
       setUser(data);
       setIsAuthenticated(true);
@@ -56,6 +61,11 @@ export const AuthProvider = ({ children }) => {
       setError(null);
       const data = await authApi.register(userData);
       
+      // Store token in localStorage
+      if (data.access_token) {
+        localStorage.setItem('token', data.access_token);
+      }
+      
       // Set user data and auth state
       setUser(data);
       setIsAuthenticated(true);
@@ -68,7 +78,7 @@ export const AuthProvider = ({ children }) => {
   
   // Logout function
   const logout = () => {
-    authApi.logout();
+    localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);
   };
@@ -97,7 +107,7 @@ export const AuthProvider = ({ children }) => {
   // Check if user is a Master Guide (Level 1) in any team
   const isMasterGuide = () => {
     if (!user?.teams) return false;
-    return user.teams.some(team => team.role_level === 1);
+    return user.teams.some(team => team.role_level === 1 || team.is_master_guide === true);
   };
   
   // Check if user is a Tactical Guide (Level 2) in any team

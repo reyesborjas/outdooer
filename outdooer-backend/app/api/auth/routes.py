@@ -4,6 +4,7 @@ from app.services.auth_service import AuthService
 from datetime import datetime
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models.user import User, UserRole
+from app.models.team import Team, TeamMember  # Añade esta línea de importación
 from app import db
 
 @auth_bp.route('/login', methods=['POST'])
@@ -58,6 +59,8 @@ def register():
     
     return jsonify(result), 201
 
+# Actualización para la función get_current_user en app/api/auth/routes.py
+
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 def get_current_user():
@@ -65,25 +68,58 @@ def get_current_user():
     current_user_id = get_jwt_identity()
     
     try:
+        # Obtener información básica del usuario
         user = User.query.get(current_user_id)
         
         if not user:
             return jsonify({"error": "User not found"}), 404
         
-        # Get user roles
-        user_roles = UserRole.query.filter_by(user_id=current_user_id).all()
-        roles = [role.role_type for role in user_roles]
-            
-        # Return user data (excluding sensitive information)
-        return jsonify({
+        # Preparar datos básicos del usuario (sin información sensible)
+        user_data = {
             "user_id": user.user_id,
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
             "profile_image_url": user.profile_image_url,
             "account_status": user.account_status,
-            "roles": roles
-        }), 200
+            "roles": [],
+            "teams": []
+        }
+        
+        # Obtener roles del usuario de forma segura
+        try:
+            user_roles = UserRole.query.filter_by(user_id=current_user_id).all()
+            user_data["roles"] = [role.role_type for role in user_roles] if user_roles else []
+        except Exception as role_error:
+            print(f"Error fetching user roles: {str(role_error)}")
+            # Continuar con la ejecución y devolver los roles como lista vacía
+        
+        # Obtener pertenencias a equipos de forma segura
+        try:
+            team_memberships = []
+            
+            # Buscar membresías de equipo
+            for membership in TeamMember.query.filter_by(user_id=current_user_id).all():
+                try:
+                    team = Team.query.get(membership.team_id)
+                    if team:
+                        team_memberships.append({
+                            'team_id': team.team_id,
+                            'team_name': team.team_name,
+                            'role_level': membership.role_level,
+                            'is_master_guide': team.master_guide_id == current_user_id
+                        })
+                except Exception as team_error:
+                    print(f"Error processing team {membership.team_id}: {str(team_error)}")
+                    # Continuar con el siguiente equipo
+            
+            user_data["teams"] = team_memberships
+        except Exception as teams_error:
+            print(f"Error fetching team memberships: {str(teams_error)}")
+            # Continuar con la ejecución y devolver los equipos como lista vacía
+        
+        return jsonify(user_data), 200
         
     except Exception as e:
-        return jsonify({"error": f"Error retrieving user data: {str(e)}"}), 500
+        print(f"Error retrieving user data: {str(e)}")
+        return jsonify({"error": "Error retrieving user data"}), 500
