@@ -32,10 +32,11 @@ def create_app(config_name):
     ma.init_app(app)
     mail.init_app(app)
     cors.init_app(app,
-                  resources={r"/api/*": {"origins": "http://localhost:5173"}},
-                  supports_credentials=True,
-                  methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-
+              resources={r"/api/*": {"origins": "http://localhost:5173"}},
+              supports_credentials=True,
+              methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+              allow_headers=["Content-Type", "Authorization"]) 
+    
     # Register blueprints
     from app.api.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')

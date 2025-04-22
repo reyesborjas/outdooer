@@ -43,24 +43,13 @@ class TeamMember(db.Model):
     
     __table_args__ = (db.UniqueConstraint('team_id', 'user_id'),)
     
-    # Relaciones
+    # Add this relationship to match the back_populates in User class
+    user = db.relationship('User', back_populates='team_memberships')
     team = db.relationship('Team', back_populates='members')
-    # Evitar la relación bidireccional con User para romper la circularidad
-    # (ya está definida en User.team_memberships)
     
     def __repr__(self):
         return f'<TeamMember {self.user_id} in {self.team_id}>'
     
-    def to_dict(self):
-        return {
-            'team_member_id': self.team_member_id,
-            'team_id': self.team_id,
-            'user_id': self.user_id,
-            'role_level': self.role_level,
-            'joined_at': self.joined_at.isoformat() if self.joined_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-
 class TeamRoleConfiguration(db.Model):
     __tablename__ = 'team_role_configurations'
     
@@ -74,7 +63,7 @@ class TeamRoleConfiguration(db.Model):
     
     # Relaciones
     team = db.relationship('Team', back_populates='role_config')
-    
+    user = db.relationship('User', back_populates='team_memberships')
     def __repr__(self):
         return f'<TeamRoleConfiguration for {self.team_id}>'
     

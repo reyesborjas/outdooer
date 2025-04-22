@@ -24,11 +24,12 @@ class Activity(db.Model):
     act_cover_image_url = db.Column(db.String(255))
     
     # Relaciones
-    location = db.relationship('Location', back_populates='activities')
-    team = db.relationship('Team', back_populates='activities')
+    location = db.relationship('Location', backref='activities')
+    team = db.relationship('Team', backref='activities')
     # Las relaciones con User se definen en user.py para evitar circularidad
     activity_type = db.relationship('ActivityType', backref='activities')
-
+    creator = db.relationship('User', foreign_keys=[created_by], back_populates='created_activities')
+    leader = db.relationship('User', foreign_keys=[leader_id], back_populates='led_activities')
     def to_dict(self):
         """Convert the Activity model to a dictionary."""
         try:

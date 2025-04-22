@@ -23,7 +23,7 @@ class Expedition(db.Model):
     # Relationships
     team = db.relationship('Team', back_populates='expeditions')
     creator = db.relationship('User', foreign_keys=[created_by], back_populates='created_expeditions')
-    leader = db.relationship('User', foreign_keys=[leader_id], backref='led_expeditions')
+    leader = db.relationship('User', foreign_keys=[leader_id], back_populates='led_expeditions')
     expedition_activities = db.relationship('ExpeditionActivity', back_populates='expedition', cascade='all, delete-orphan')
     expedition_locations = db.relationship('ExpeditionLocation', back_populates='expedition', cascade='all, delete-orphan')
     expedition_resources = db.relationship('ExpeditionResource', back_populates='expedition', cascade='all, delete-orphan')

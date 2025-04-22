@@ -20,6 +20,7 @@ class User(db.Model):
     national_id = db.Column(db.String(20))
     phone_number = db.Column(db.String(20))
     account_status = db.Column(db.String(20), default='active')
+
     
     # Relaciones
     # Usar strings para relaciones para resolver dependencias circulares
@@ -42,6 +43,8 @@ class UserRole(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     __table_args__ = (db.UniqueConstraint('user_id', 'role_type'),)
+    
+    
     
     def __repr__(self):
         return f'<UserRole {self.role_type}>'
