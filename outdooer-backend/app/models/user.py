@@ -23,12 +23,12 @@ class User(db.Model):
     
     # Relaciones
     # Usar strings para relaciones para resolver dependencias circulares
-    created_activities = db.relationship('Activity', foreign_keys='Activity.created_by', backref='creator')
-    led_activities = db.relationship('Activity', foreign_keys='Activity.leader_id', backref='leader')
-    created_expeditions = db.relationship('Expedition', foreign_keys='Expedition.created_by', backref='creator')
-    led_expeditions = db.relationship('Expedition', foreign_keys='Expedition.leader_id', backref='leader')
-    roles = db.relationship('UserRole', backref='user', lazy='dynamic')
-    team_memberships = db.relationship('TeamMember', backref='user', lazy='dynamic')
+    created_activities = db.relationship('Activity', foreign_keys='Activity.created_by', back_populates='creator')
+    led_activities = db.relationship('Activity', foreign_keys='Activity.leader_id', back_populates='leader')
+    created_expeditions = db.relationship('Expedition', foreign_keys='Expedition.created_by', back_populates='creator')
+    led_expeditions = db.relationship('Expedition', foreign_keys='Expedition.leader_id', back_populates='leader')
+    roles = db.relationship('UserRole', back_populates='user', lazy='dynamic')
+    team_memberships = db.relationship('TeamMember', back_populates='user', lazy='dynamic')
     
     def __repr__(self):
         return f'<User {self.email}>'
