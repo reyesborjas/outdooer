@@ -31,11 +31,15 @@ def create_app(config_name):
     jwt.init_app(app)
     ma.init_app(app)
     mail.init_app(app)
+    
+    # Fix CORS to allow credentials and proper headers
     cors.init_app(app,
               resources={r"/api/*": {"origins": "http://localhost:5173"}},
               supports_credentials=True,
               methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-              allow_headers=["Content-Type", "Authorization"]) 
+              allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin"],
+              expose_headers=["Access-Control-Allow-Origin"],
+              vary_header=True)
     
     # Register blueprints
     from app.api.auth import auth_bp

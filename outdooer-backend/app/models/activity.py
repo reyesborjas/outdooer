@@ -23,13 +23,13 @@ class Activity(db.Model):
     activity_status = db.Column(db.String(20), default='active')
     act_cover_image_url = db.Column(db.String(255))
     
-    # Relaciones
+    # Define relationships - fixing the location relationship
     location = db.relationship('Location', backref='activities')
-    team = db.relationship('Team', backref='activities')
-    # Las relaciones con User se definen en user.py para evitar circularidad
+    team = db.relationship('Team', back_populates='activities')
     activity_type = db.relationship('ActivityType', backref='activities')
     creator = db.relationship('User', foreign_keys=[created_by], back_populates='created_activities')
     leader = db.relationship('User', foreign_keys=[leader_id], back_populates='led_activities')
+    
     def to_dict(self):
         """Convert the Activity model to a dictionary."""
         try:
@@ -74,7 +74,7 @@ class Activity(db.Model):
             return activity_dict
         except Exception as e:
             print(f"Error in to_dict: {str(e)}")
-            # Retornar un diccionario básico en caso de error
+            # Return a basic dictionary in case of error
             return {
                 "activity_id": self.activity_id,
                 "title": self.title,

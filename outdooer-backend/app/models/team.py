@@ -7,16 +7,19 @@ class Team(db.Model):
     
     team_id = db.Column(db.Integer, primary_key=True)
     team_name = db.Column(db.String(255), unique=True, nullable=False)
-    master_guide_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    master_guide_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     team_status = db.Column(db.String(20), default='active')
     
-    # Relaciones
+    # Define relationships
     members = db.relationship('TeamMember', back_populates='team', lazy='dynamic', cascade='all, delete-orphan')
     role_config = db.relationship('TeamRoleConfiguration', back_populates='team', uselist=False, cascade='all, delete-orphan')
+    
+    # Using strings for some relationships to avoid circular imports
     activities = db.relationship('Activity', back_populates='team')
     expeditions = db.relationship('Expedition', back_populates='team')
+    invitation_codes = db.relationship('InvitationCode', back_populates='team')
     
     def __repr__(self):
         return f'<Team {self.team_name}>'
@@ -35,15 +38,15 @@ class TeamMember(db.Model):
     __tablename__ = 'team_members'
     
     team_member_id = db.Column(db.Integer, primary_key=True)
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     role_level = db.Column(db.Integer, nullable=False)
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     __table_args__ = (db.UniqueConstraint('team_id', 'user_id'),)
     
-    # Add this relationship to match the back_populates in User class
+    # Define relationships
     user = db.relationship('User', back_populates='team_memberships')
     team = db.relationship('Team', back_populates='members')
     
@@ -54,16 +57,16 @@ class TeamRoleConfiguration(db.Model):
     __tablename__ = 'team_role_configurations'
     
     role_config_id = db.Column(db.Integer, primary_key=True)
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), unique=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), unique=True, nullable=False)
     level_1_name = db.Column(db.String(100), default='Master Guide')
     level_2_name = db.Column(db.String(100), default='Tactical Guide')
     level_3_name = db.Column(db.String(100), default='Technical Guide')
     level_4_name = db.Column(db.String(100), default='Base Guide')
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Relaciones
+    # Define relationship with Team
     team = db.relationship('Team', back_populates='role_config')
-    user = db.relationship('User', back_populates='team_memberships')
+    
     def __repr__(self):
         return f'<TeamRoleConfiguration for {self.team_id}>'
     
