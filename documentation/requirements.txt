@@ -1,0 +1,180 @@
+Tras analizar a fondo el código del backend y frontend de la aplicación Outdooer, he identificado varias áreas donde es necesario realizar cambios para garantizar la coherencia en la lógica de negocio y la estructura de la aplicación. Presentaré un análisis de las discrepancias encontradas y recomendaciones organizadas por componentes.
+
+## 1. Inconsistencias en las rutas API
+
+### Problema: Rutas de actividades inconsistentes
+La forma en que se definen y usan las rutas en el frontend y backend no coincide completamente:
+
+- El frontend usa rutas como `/create-activity` mientras que el backend espera rutas con formato `/activities`
+- En el frontend, `activitiesApi.js` intenta acceder a `/activities/check-title`, pero esta ruta no está bien implementada en el backend.
+
+**Recomendación:**
+- Estandarizar las rutas en ambos lados.
+- En el backend, asegurar que todas las rutas comienzan con `/api/` para mantener consistencia.
+
+### Problema: Expediciones implementadas de forma mixta
+- En el backend, el módulo de expediciones mezcla Flask y FastAPI (`expeditions/routes.py`), lo que genera inconsistencias.
+- Las rutas no están registradas correctamente, hay una mezcla de `APIRouter` y `Blueprint`.
+
+**Recomendación:**
+- Estandarizar el uso de un solo framework (Flask) para todas las rutas.
+- Refactorizar el código de expediciones para seguir el mismo patrón que activities.
+
+## 2. Problemas en los modelos de datos
+
+### Problema: Relaciones incompletas en modelos
+- En `models/expedition.py`, algunas relaciones se definen pero las tablas correspondientes no existen:
+  ```python
+  expedition_activities = db.relationship('ExpeditionActivity', ...)
+  expedition_resources = db.relationship('ExpeditionResource', ...)
+  ```
+
+**Recomendación:**
+- Implementar los modelos faltantes o comentar las relaciones hasta que se implementen.
+- Seguir el patrón establecido en `models/activity.py`.
+
+### Problema: Inconsistencia en definiciones de campos
+En `activity.py` del frontend, hay campos que no corresponden exactamente con la definición en el schema SQL y los modelos del backend.
+
+**Recomendación:**
+- Revisar todos los modelos y asegurar que los campos en el frontend coincidan con los del backend.
+- Documentar los campos requeridos vs opcionales.
+
+## 3. Autenticación y gestión de usuarios
+
+### Problema: Mezcla de métodos de autenticación
+- El frontend usa localStorage para almacenar tokens, pero no hay un manejo claro de caducidad.
+- No se implementa el refresh token aunque se genera en el backend.
+
+**Recomendación:**
+- Implementar la renovación de tokens de autenticación.
+- Establecer un método consistente para manejar la expiración de sesiones.
+
+### Problema: Roles y permisos incompletos
+- El contexto de Auth en frontend verifica roles, pero el backend no implementa completamente estas verificaciones.
+
+**Recomendación:**
+- Completar la implementación de decoradores para verificar permisos por role_level en el backend.
+- Sincronizar las verificaciones de roles entre frontend y backend.
+
+## 4. Funcionalidades específicas que requieren cambios
+
+### 1. Gestión de actividades
+
+**Problemas:**
+- Las rutas de gestión de fechas de actividades (`ActivityDates.jsx`) no están implementadas en el backend.
+- El frontend crea URLs como `/activity-dates/{activityId}` pero el backend no tiene esta ruta.
+
+**Recomendación:**
+- Implementar en el backend:
+```python
+@activities_bp.route('/<int:activity_id>/dates', methods=['GET', 'POST'])
+@jwt_required()
+def manage_activity_dates(activity_id):
+    # Implementación de obtener/agregar fechas
+    pass
+
+@activities_bp.route('/activity-dates/<int:date_id>', methods=['PUT', 'DELETE'])
+@jwt_required()
+def activity_date_actions(date_id):
+    # Implementación de actualizar/eliminar fechas
+    pass
+```
+
+### 2. Vista de actividades similar
+
+**Problemas:**
+- `SimilarActivityWarning.jsx` es usado por varios componentes pero la API correspondiente en el backend no está completamente implementada.
+
+**Recomendación:**
+- Completar la implementación del backend para `/activities/check-similar`.
+- Asegurar que devuelve el formato esperado por el componente del frontend.
+
+### 3. Expediciones
+
+**Problemas:**
+- La implementación de expediciones está incompleta y mezcla Flask y FastAPI.
+- Rutas como `/expeditions/led-by/{leader_id}` tienen sintaxis inconsistente.
+
+**Recomendación:**
+- Refactorizar completamente el módulo de expediciones siguiendo el patrón de actividades:
+```python
+# Estructura similar a activity
+expedition_bp = Blueprint('expedition', __name__)
+
+@expedition_bp.route('/', methods=['GET'])
+@jwt_required()
+def get_all_expeditions():
+    # Implementación
+    pass
+```
+
+## 5. Componentes del Frontend que requieren cambios
+
+### 1. SearchableDropdown.jsx
+**Problemas:**
+- El componente asume que todas las APIs devuelven datos en un formato específico, pero algunas no lo hacen.
+
+**Recomendación:**
+- Hacer el componente más flexible para manejar diferentes estructuras de respuesta.
+- Agregar validación para evitar errores cuando los datos no tienen la estructura esperada.
+
+### 2. MyActivities.jsx
+**Problemas:**
+- Asume rutas y respuestas específicas del backend que no están completamente implementadas.
+- Usa funciones del AuthContext como `canDeleteActivity` que no están completamente implementadas en el backend.
+
+**Recomendación:**
+- Sincronizar las verificaciones de permisos con el backend.
+- Implementar un sistema de mensajes de error más detallado.
+
+### 3. EditActivity.jsx y NewActivity.jsx
+**Problemas:**
+- Asumen campos y validaciones que no están completamente implementadas en el backend.
+
+**Recomendación:**
+- Hacer consistentes los validadores entre frontend y backend.
+- Agregar mejor manejo de errores cuando las validaciones del backend fallan.
+
+## 6. API Endpoints que requieren implementación o modificación
+
+1. **Fechas de actividades:**
+```
+GET /api/activities/{activity_id}/dates
+POST /api/activities/{activity_id}/dates
+PUT /api/activity-dates/{date_id}
+DELETE /api/activity-dates/{date_id}
+```
+
+2. **Comprobación de actividades similares:**
+```
+GET /api/activities/check-similar
+```
+
+3. **Endpoints de expediciones:**
+```
+GET /api/expeditions
+POST /api/expeditions
+GET /api/expeditions/{expedition_id}
+PUT /api/expeditions/{expedition_id}
+DELETE /api/expeditions/{expedition_id}
+GET /api/expeditions/led-by/{leader_id}
+```
+
+4. **Gestión de miembros del equipo:**
+```
+GET /api/teams/{team_id}/members
+POST /api/teams/{team_id}/members
+DELETE /api/teams/{team_id}/members/{user_id}
+```
+
+## Conclusión
+
+La aplicación tiene una buena base estructural, pero requiere varios ajustes para garantizar consistencia entre el frontend y el backend. Los principales problemas se centran en:
+
+1. Rutas inconsistentes o incompletas
+2. Mezcla de frameworks (Flask y FastAPI)
+3. Validaciones y verificaciones de permisos incompletas
+4. Relaciones y modelos incompletos
+
+Recomiendo priorizar la estandarización de las rutas y completar las implementaciones del backend antes de agregar nuevas funcionalidades. También sería beneficioso implementar pruebas automatizadas para validar la coherencia entre frontend y backend.

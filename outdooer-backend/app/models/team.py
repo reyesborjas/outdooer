@@ -13,15 +13,23 @@ class Team(db.Model):
     team_status = db.Column(db.String(20), default='active')
     
     # Relaciones
-    # Usar strings para relaciones para resolver dependencias circulares
     members = db.relationship('TeamMember', back_populates='team', lazy='dynamic', cascade='all, delete-orphan')
     role_config = db.relationship('TeamRoleConfiguration', back_populates='team', uselist=False, cascade='all, delete-orphan')
     activities = db.relationship('Activity', back_populates='team')
-    # Expedition se omite si no lo tienes definido todavía
-    # expeditions = db.relationship('Expedition', back_populates='team')
+    expeditions = db.relationship('Expedition', back_populates='team')
     
     def __repr__(self):
         return f'<Team {self.team_name}>'
+
+    def to_dict(self):
+        return {
+            'team_id': self.team_id,
+            'team_name': self.team_name,
+            'master_guide_id': self.master_guide_id,
+            'team_status': self.team_status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
 
 class TeamMember(db.Model):
     __tablename__ = 'team_members'
@@ -42,6 +50,16 @@ class TeamMember(db.Model):
     
     def __repr__(self):
         return f'<TeamMember {self.user_id} in {self.team_id}>'
+    
+    def to_dict(self):
+        return {
+            'team_member_id': self.team_member_id,
+            'team_id': self.team_id,
+            'user_id': self.user_id,
+            'role_level': self.role_level,
+            'joined_at': self.joined_at.isoformat() if self.joined_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
 
 class TeamRoleConfiguration(db.Model):
     __tablename__ = 'team_role_configurations'
@@ -59,3 +77,14 @@ class TeamRoleConfiguration(db.Model):
     
     def __repr__(self):
         return f'<TeamRoleConfiguration for {self.team_id}>'
+    
+    def to_dict(self):
+        return {
+            'role_config_id': self.role_config_id,
+            'team_id': self.team_id,
+            'level_1_name': self.level_1_name,
+            'level_2_name': self.level_2_name,
+            'level_3_name': self.level_3_name,
+            'level_4_name': self.level_4_name,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }

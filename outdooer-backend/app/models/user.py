@@ -25,6 +25,8 @@ class User(db.Model):
     # Usar strings para relaciones para resolver dependencias circulares
     created_activities = db.relationship('Activity', foreign_keys='Activity.created_by', backref='creator')
     led_activities = db.relationship('Activity', foreign_keys='Activity.leader_id', backref='leader')
+    created_expeditions = db.relationship('Expedition', foreign_keys='Expedition.created_by', backref='creator')
+    led_expeditions = db.relationship('Expedition', foreign_keys='Expedition.leader_id', backref='leader')
     roles = db.relationship('UserRole', backref='user', lazy='dynamic')
     team_memberships = db.relationship('TeamMember', backref='user', lazy='dynamic')
     

@@ -46,19 +46,22 @@ def create_app(config_name):
     from app.api.invitation import invitations_bp
     app.register_blueprint(invitations_bp, url_prefix='/api/invitations')
 
-    # Health check
-    @app.route('/api/health')
-    def health_check():
-        return {"status": "ok", "message": "outdooer API is running"}
-
     from app.api.activity_types import activity_types_bp
     app.register_blueprint(activity_types_bp, url_prefix='/api/activity-types')
 
     from app.api.teams import teams_bp
     app.register_blueprint(teams_bp, url_prefix='/api/teams')
 
-    # Add the locations blueprint
     from app.api.locations import locations_bp
     app.register_blueprint(locations_bp, url_prefix='/api/locations')
+    
+    # Register expeditions blueprint
+    from app.api.expeditions import expeditions_bp
+    app.register_blueprint(expeditions_bp, url_prefix='/api/expeditions')
+
+    # Health check
+    @app.route('/api/health')
+    def health_check():
+        return {"status": "ok", "message": "outdooer API is running"}
 
     return app

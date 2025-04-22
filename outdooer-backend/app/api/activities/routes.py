@@ -1,7 +1,7 @@
 # app/api/activities/routes.py
 from flask import jsonify, request
 from . import activities_bp
-from app.models.activity import Activity, find_similar_activities
+from app.models.activity import Activity
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from .controllers import (
@@ -12,6 +12,7 @@ from .controllers import (
     update_activity as update_activity_controller,
     delete_activity as delete_activity_controller
 )
+from .similar_activities import find_similar_activities, check_similar_activities_endpoint
 
 @activities_bp.route('/', methods=['GET'])
 def get_all_activities_route():
@@ -82,33 +83,7 @@ def check_activity_title():
 @jwt_required()
 def check_similar_activities():
     """Check for similar activities based on type and location"""
-    try:
-        team_id = request.args.get('team_id', type=int)
-        activity_type_id = request.args.get('activity_type_id', type=int)
-        location_id = request.args.get('location_id', type=int)
-        activity_id = request.args.get('activity_id', type=int)
-        
-        if None in [team_id, activity_type_id, location_id]:
-            return jsonify({"error": "Missing required parameters"}), 400
-        
-        similar_activities = find_similar_activities(
-            team_id, activity_type_id, location_id, activity_id
-        )
-        
-        return jsonify({
-            "has_similar": len(similar_activities) > 0,
-            "similar_count": len(similar_activities),
-            "similar_activities": [
-                {
-                    "activity_id": a.activity_id,
-                    "title": a.title,
-                    "difficulty_level": a.difficulty_level,
-                    "price": float(a.price)
-                } for a in similar_activities[:5]
-            ]
-        }), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return check_similar_activities_endpoint()
 
 @activities_bp.route('/', methods=['POST'])
 @jwt_required()
@@ -133,3 +108,44 @@ def delete_activity_route(activity_id):
 def get_my_activities():
     """Get activities based on user's role"""
     return get_my_activities_controller()
+
+# New routes for activity dates
+
+@activities_bp.route('/<int:activity_id>/dates', methods=['GET'])
+@jwt_required()
+def get_activity_dates(activity_id):
+    """Get all available dates for an activity"""
+    try:
+        from app.models.activity_date import GuideActivityInstance, ActivityAvailableDate
+        
+        # Verify if activity exists
+        activity = Activity.query.get_or_404(activity_id)
+        
+        # Get all instances for this activity
+        instances = GuideActivityInstance.query.filter_by(activity_id=activity_id, is_active=True).all()
+        
+        # Get all dates from all instances
+        all_dates = []
+        for instance in instances:
+            dates = ActivityAvailableDate.query.filter_by(activity_instance_id=instance.instance_id).all()
+            
+            for date_obj in dates:
+                date_dict = date_obj.to_dict()
+                date_dict['guide_id'] = instance.guide_id
+                date_dict['guide_name'] = f"{instance.guide.first_name} {instance.guide.last_name}" if instance.guide else "Unknown"
+                all_dates.append(date_dict)
+        
+        return jsonify({"dates": all_dates}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@activities_bp.route('/<int:activity_id>/dates', methods=['POST'])
+@jwt_required()
+def add_activity_date(activity_id):
+    """Add a new available date for an activity"""
+    try:
+        # Redirect to activity_dates_bp endpoint
+        from app.api.activity_dates.routes import add_activity_date as add_date_handler
+        return add_date_handler(activity_id)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
