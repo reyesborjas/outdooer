@@ -34,6 +34,10 @@ export const authApi = {
       const response = await api.get('/auth/me');
       return response.data;
     } catch (error) {
+      // If we get a 401 Unauthorized, clear the token
+      if (error.response && error.response.status === 401) {
+        localStorage.removeItem('token');
+      }
       console.error('Get current user error:', error.response?.data || error.message);
       throw error;
     }

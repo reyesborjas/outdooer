@@ -1,235 +1,251 @@
 // src/pages/Register.jsx
 import { useState, useContext, useEffect } from 'react';
-import { Form, Button, Container, Row, Col, Card, Alert, Badge, Spinner } from 'react-bootstrap';
+import { Form, Button, Container, Row, Col, Card, Alert, Spinner } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { authApi } from '../api/auth';
 
 const Register = () => {
-  // Get query params (for invitation codes shared via URL)
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const inviteCodeFromUrl = queryParams.get('code');
-
+  // Form state
   const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
     email: '',
     password: '',
-    confirm_password: '',
+    confirmPassword: '',
+    first_name: '',
+    last_name: '',
     date_of_birth: '',
-    invitation_code: inviteCodeFromUrl || ''
+    invitation_code: ''
   });
-  
-  const [validationErrors, setValidationErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [codeValidating, setCodeValidating] = useState(false);
-  const [codeInfo, setCodeInfo] = useState(null);
+
+  // Validation and UI state
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [invitationInfo, setInvitationInfo] = useState(null);
+  const [invitationError, setInvitationError] = useState(null);
+  const [validatingCode, setValidatingCode] = useState(false);
+
+  // Router and Auth context
   const { register, error, setError } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   
-  // Validate invitation code when component mounts or code changes
+  // Extract invitation code from URL if present
   useEffect(() => {
-    const validateInvitationCode = async () => {
-      if (!formData.invitation_code || formData.invitation_code.length < 5) {
-        setCodeInfo(null);
-        return;
-      }
-      
-      setCodeValidating(true);
-      try {
-        const response = await authApi.validateInvitationCode(formData.invitation_code);
-        setCodeInfo(response);
-      } catch (err) {
-        console.error("Validation error:", err);
-        setCodeInfo({ 
-          valid: false, 
-          message: err.response?.data?.error || 'Invalid or expired invitation code'
-        });
-      } finally {
-        setCodeValidating(false);
-      }
-    };
+    const params = new URLSearchParams(location.search);
+    const codeFromUrl = params.get('code');
     
-    // Validate immediately if code comes from URL parameter
-    if (inviteCodeFromUrl) {
-      validateInvitationCode();
-    } else {
-      // Debounce the validation to avoid too many API calls
-      const timeoutId = setTimeout(validateInvitationCode, 500);
-      return () => clearTimeout(timeoutId);
+    if (codeFromUrl) {
+      setFormData(prev => ({ ...prev, invitation_code: codeFromUrl }));
+      validateInvitationCode(codeFromUrl);
     }
-  }, [formData.invitation_code, inviteCodeFromUrl]);
-  
+  }, [location]);
+
+  // Handle form field changes
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Clear validation error when field is changed
-    if (validationErrors[e.target.name]) {
-      setValidationErrors({
-        ...validationErrors,
-        [e.target.name]: null
-      });
+    // Clear field-specific error when user modifies the field
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: null }));
+    }
+    
+    // Validate invitation code if changed and not empty
+    if (name === 'invitation_code' && value.trim() !== '') {
+      validateInvitationCode(value);
+    } else if (name === 'invitation_code' && value.trim() === '') {
+      setInvitationInfo(null);
+      setInvitationError(null);
     }
   };
-  
+
+  // Validate invitation code
+  const validateInvitationCode = async (code) => {
+    setValidatingCode(true);
+    setInvitationError(null);
+    try {
+      const response = await authApi.validateInvitationCode(code);
+      setInvitationInfo(response);
+    } catch (err) {
+      console.error('Error validating invitation code:', err);
+      setInvitationError('Invalid or expired invitation code');
+    } finally {
+      setValidatingCode(false);
+    }
+  };
+
+  // Validate the form
   const validateForm = () => {
-    const errors = {};
+    const newErrors = {};
     
-    if (formData.password !== formData.confirm_password) {
-      errors.confirm_password = 'Passwords do not match';
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
     }
     
-    if (formData.password && formData.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters long';
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
     }
     
-    // Date of birth validation - must be at least 13 years old
-    if (formData.date_of_birth) {
+    // Confirm password validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.confirmPassword !== formData.password) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    // Name validation
+    if (!formData.first_name.trim()) {
+      newErrors.first_name = 'First name is required';
+    }
+    
+    if (!formData.last_name.trim()) {
+      newErrors.last_name = 'Last name is required';
+    }
+    
+    // Date of birth validation
+    if (!formData.date_of_birth) {
+      newErrors.date_of_birth = 'Date of birth is required';
+    } else {
       const birthDate = new Date(formData.date_of_birth);
       const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
+      const age = today.getFullYear() - birthDate.getFullYear();
       
-      if (age < 13) {
-        errors.date_of_birth = 'You must be at least 13 years old to register';
+      // Check if user is at least 18 years old
+      if (age < 18) {
+        newErrors.date_of_birth = 'You must be at least 18 years old';
       }
     }
     
-    // If they entered an invitation code but it's not valid, add an error
-    if (formData.invitation_code && codeInfo && !codeInfo.valid) {
-      errors.invitation_code = codeInfo.message || 'Invalid invitation code';
-    }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
-  
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
     
-    // First validate the form client-side
+    // Validate form
     if (!validateForm()) {
       return;
     }
     
-    setIsLoading(true);
-    
-    // Create a new object without confirm_password
-    const { confirm_password, ...registerData } = formData;
+    setIsSubmitting(true);
+    setError(null);
     
     try {
-      // Pass the registration information to AuthContext
-      const success = await register(registerData);
+      // Remove confirmPassword as it's not needed for registration
+      const { confirmPassword, ...registrationData } = formData;
+      
+      // Register the user
+      const success = await register(registrationData);
+      
       if (success) {
-        // If registration was successful, navigate to dashboard
+        // Redirect to dashboard
         navigate('/dashboard');
       }
     } catch (err) {
-      // Error is handled in AuthContext
-      console.error('Registration submission error:', err);
+      console.error('Registration error:', err);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Container className="py-5">
       <Row className="justify-content-center">
         <Col md={8}>
           <Card>
             <Card.Body className="p-4">
-              <h2 className="text-center mb-4">Create Account</h2>
+              <h2 className="text-center mb-4">Create an Account</h2>
               
               {error && <Alert variant="danger">{error}</Alert>}
               
-              {codeInfo?.valid && (
-                <Alert variant="success" className="mb-4">
-                  <Alert.Heading>Valid Invitation Code</Alert.Heading>
-                  <p>
-                    {codeInfo.role_type === 'master_guide' ? (
-                      <>You'll be registered as a <Badge bg="primary">Master Guide</Badge> and will be able to create your own team.</>
-                    ) : (
-                      <>You'll be registered as a <Badge bg="info">Guide</Badge> {codeInfo.team_name && `for team "${codeInfo.team_name}"`}.</>
+              {/* Invitation code information */}
+              {invitationInfo && invitationInfo.valid && (
+                <Alert variant="success">
+                  <p className="mb-0">
+                    <strong>Valid invitation code!</strong> You're registering as a{' '}
+                    <strong>{invitationInfo.role_type.replace('_', ' ')}</strong>.
+                    {invitationInfo.team_name && (
+                      <span> You'll be joining team <strong>{invitationInfo.team_name}</strong>.</span>
                     )}
                   </p>
+                </Alert>
+              )}
+              
+              {invitationError && (
+                <Alert variant="danger">
+                  {invitationError}
                 </Alert>
               )}
               
               <Form onSubmit={handleSubmit}>
                 <Row>
                   <Col md={6}>
-                    <Form.Group className="mb-3" controlId="firstName">
+                    <Form.Group className="mb-3" controlId="first_name">
                       <Form.Label>First Name</Form.Label>
                       <Form.Control
                         type="text"
                         name="first_name"
                         value={formData.first_name}
                         onChange={handleChange}
-                        isInvalid={!!validationErrors.first_name}
-                        required
-                        placeholder="Enter your first name"
+                        isInvalid={!!errors.first_name}
                       />
                       <Form.Control.Feedback type="invalid">
-                        {validationErrors.first_name}
+                        {errors.first_name}
                       </Form.Control.Feedback>
                     </Form.Group>
                   </Col>
                   
                   <Col md={6}>
-                    <Form.Group className="mb-3" controlId="lastName">
+                    <Form.Group className="mb-3" controlId="last_name">
                       <Form.Label>Last Name</Form.Label>
                       <Form.Control
                         type="text"
                         name="last_name"
                         value={formData.last_name}
                         onChange={handleChange}
-                        isInvalid={!!validationErrors.last_name}
-                        required
-                        placeholder="Enter your last name"
+                        isInvalid={!!errors.last_name}
                       />
                       <Form.Control.Feedback type="invalid">
-                        {validationErrors.last_name}
+                        {errors.last_name}
                       </Form.Control.Feedback>
                     </Form.Group>
                   </Col>
                 </Row>
                 
                 <Form.Group className="mb-3" controlId="email">
-                  <Form.Label>Email address</Form.Label>
+                  <Form.Label>Email Address</Form.Label>
                   <Form.Control
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    isInvalid={!!validationErrors.email}
-                    required
-                    placeholder="Enter your email"
+                    isInvalid={!!errors.email}
                   />
                   <Form.Control.Feedback type="invalid">
-                    {validationErrors.email}
+                    {errors.email}
                   </Form.Control.Feedback>
                 </Form.Group>
                 
-                <Form.Group className="mb-3" controlId="dob">
+                <Form.Group className="mb-3" controlId="date_of_birth">
                   <Form.Label>Date of Birth</Form.Label>
                   <Form.Control
                     type="date"
                     name="date_of_birth"
                     value={formData.date_of_birth}
                     onChange={handleChange}
-                    isInvalid={!!validationErrors.date_of_birth}
-                    required
+                    isInvalid={!!errors.date_of_birth}
                   />
                   <Form.Control.Feedback type="invalid">
-                    {validationErrors.date_of_birth}
+                    {errors.date_of_birth}
                   </Form.Control.Feedback>
                 </Form.Group>
                 
@@ -238,20 +254,15 @@ const Register = () => {
                     <Form.Group className="mb-3" controlId="password">
                       <Form.Label>Password</Form.Label>
                       <Form.Control
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         name="password"
                         value={formData.password}
                         onChange={handleChange}
-                        isInvalid={!!validationErrors.password}
-                        required
-                        placeholder="Create a password"
+                        isInvalid={!!errors.password}
                       />
                       <Form.Control.Feedback type="invalid">
-                        {validationErrors.password}
+                        {errors.password}
                       </Form.Control.Feedback>
-                      <Form.Text className="text-muted">
-                        Must be at least 8 characters long
-                      </Form.Text>
                     </Form.Group>
                   </Col>
                   
@@ -259,75 +270,71 @@ const Register = () => {
                     <Form.Group className="mb-3" controlId="confirmPassword">
                       <Form.Label>Confirm Password</Form.Label>
                       <Form.Control
-                        type="password"
-                        name="confirm_password"
-                        value={formData.confirm_password}
+                        type={showPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
                         onChange={handleChange}
-                        isInvalid={!!validationErrors.confirm_password}
-                        required
-                        placeholder="Confirm your password"
+                        isInvalid={!!errors.confirmPassword}
                       />
                       <Form.Control.Feedback type="invalid">
-                        {validationErrors.confirm_password}
+                        {errors.confirmPassword}
                       </Form.Control.Feedback>
                     </Form.Group>
                   </Col>
                 </Row>
                 
                 <Form.Group className="mb-3">
-                  <Form.Label>Invitation Code {!inviteCodeFromUrl && '(Optional)'}</Form.Label>
+                  <Form.Check
+                    type="checkbox"
+                    id="showPassword"
+                    label="Show password"
+                    onChange={() => setShowPassword(!showPassword)}
+                  />
+                </Form.Group>
+                
+                <Form.Group className="mb-4" controlId="invitation_code">
+                  <Form.Label>Invitation Code (Optional)</Form.Label>
                   <Form.Control
                     type="text"
                     name="invitation_code"
                     value={formData.invitation_code}
                     onChange={handleChange}
-                    placeholder="Enter invitation code if you have one"
-                    isValid={codeInfo?.valid}
-                    isInvalid={codeInfo?.valid === false || !!validationErrors.invitation_code}
-                    disabled={!!inviteCodeFromUrl} // Disable if code comes from URL
+                    isInvalid={!!errors.invitation_code}
                   />
-                  {codeValidating && (
-                    <div className="d-flex align-items-center mt-1">
-                      <Spinner animation="border" size="sm" className="me-2" />
-                      <span className="text-muted">Validating code...</span>
-                    </div>
-                  )}
-                  {!codeValidating && codeInfo?.valid === false && (
-                    <Form.Control.Feedback type="invalid">
-                      {codeInfo.message || 'Invalid invitation code'}
-                    </Form.Control.Feedback>
-                  )}
-                  {!inviteCodeFromUrl && (
-                    <Form.Text className="text-muted">
-                      Required to register as a guide. Leave empty for explorer account.
-                    </Form.Text>
-                  )}
+                  <Form.Text className="text-muted">
+                    Enter your invitation code if you have one. This is required for guide registration.
+                  </Form.Text>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.invitation_code}
+                  </Form.Control.Feedback>
                 </Form.Group>
                 
-                <Form.Group className="mb-3">
-                  <Form.Check
-                    type="checkbox"
-                    id="termsCheck"
-                    label="I agree to the Terms of Service and Privacy Policy"
-                    required
-                  />
-                </Form.Group>
-                
-                <div className="d-grid gap-2 mt-4">
-                  <Button variant="primary" type="submit" disabled={isLoading}>
-                    {isLoading ? (
+                <div className="d-grid gap-2">
+                  <Button 
+                    variant="primary" 
+                    type="submit" 
+                    disabled={isSubmitting || validatingCode}
+                  >
+                    {isSubmitting ? (
                       <>
-                        <Spinner animation="border" size="sm" className="me-2" />
+                        <Spinner
+                          as="span"
+                          animation="border"
+                          size="sm"
+                          role="status"
+                          aria-hidden="true"
+                        /> {' '}
                         Creating account...
                       </>
-                    ) : 'Create Account'}
+                    ) : 'Register'}
                   </Button>
                 </div>
               </Form>
               
-              <div className="text-center mt-3">
-                <p className="mb-0">
-                  Already have an account? <Link to="/login">Login</Link>
+              <div className="text-center mt-4">
+                <p>
+                  Already have an account?{' '}
+                  <Link to="/login">Login</Link>
                 </p>
               </div>
             </Card.Body>

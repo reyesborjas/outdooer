@@ -3,7 +3,7 @@ from app import db
 from app.models.user import User, UserRole
 from app.models.team import Team, TeamMember, TeamRoleConfiguration
 from app.models.invitation import InvitationCode, InvitationUsage
-from app.utils.security import generate_password_hash, verify_password
+from app.utils.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token
 from datetime import datetime, timedelta
 
@@ -16,7 +16,7 @@ class AuthService:
         """Authenticate a user and generate access tokens"""
         user = User.query.filter_by(email=email).first()
         
-        if not user or not verify_password(user.password_hash, password):
+        if not user or not check_password_hash(user.password_hash, password):
             return None, "Invalid email or password"
         
         # Get user roles
@@ -30,11 +30,23 @@ class AuthService:
         for membership in memberships:
             team = Team.query.get(membership.team_id)
             if team:
+                role_name = "Unknown"
+                if membership.role_level == 1:
+                    role_name = "Master Guide"
+                elif membership.role_level == 2:
+                    role_name = "Tactical Guide"
+                elif membership.role_level == 3:
+                    role_name = "Technical Guide"
+                elif membership.role_level == 4:
+                    role_name = "Base Guide"
+                
                 team_memberships.append({
                     'team_id': team.team_id,
                     'team_name': team.team_name,
                     'role_level': membership.role_level,
-                    'is_master_guide': team.master_guide_id == user.user_id
+                    'role_name': role_name,
+                    'is_master_guide': team.master_guide_id == user.user_id,
+                    'team_status': team.team_status
                 })
         
         # Create tokens
@@ -82,8 +94,11 @@ class AuthService:
             if invitation.expires_at < datetime.utcnow():
                 return None, "Invitation code has expired"
                 
-            # Set role_type to 'guide' if using invitation code
-            role_type = 'guide'
+            # Set role_type based on invitation type
+            if invitation.role_type == 'master_guide':
+                role_type = 'guide'  # Master guides are also guides
+            else:
+                role_type = invitation.role_type
 
         try:
             # Create the new user
@@ -98,12 +113,20 @@ class AuthService:
             db.session.add(new_user)
             db.session.flush()  # Get user_id without committing
 
-            # Assign the role
-            user_role = UserRole(
+            # Assign the explorer role by default
+            explorer_role = UserRole(
                 user_id=new_user.user_id,
-                role_type=role_type
+                role_type='explorer'
             )
-            db.session.add(user_role)
+            db.session.add(explorer_role)
+            
+            # Add guide role if applicable
+            if role_type == 'guide':
+                guide_role = UserRole(
+                    user_id=new_user.user_id,
+                    role_type='guide'
+                )
+                db.session.add(guide_role)
 
             # If invitation was used, record its usage
             if invitation:
@@ -160,7 +183,9 @@ class AuthService:
                         'team_id': new_team.team_id,
                         'team_name': new_team.team_name,
                         'role_level': 1,
-                        'is_master_guide': True
+                        'role_name': 'Master Guide',
+                        'is_master_guide': True,
+                        'team_status': 'active'
                     }
                     
                 elif invitation.role_type == 'guide' and invitation.team_id:
@@ -183,7 +208,9 @@ class AuthService:
                             'team_id': team.team_id,
                             'team_name': team.team_name,
                             'role_level': role_level,
-                            'is_master_guide': False
+                            'role_name': 'Base Guide',
+                            'is_master_guide': False,
+                            'team_status': team.team_status
                         }
 
             # Explicitly commit the transaction to ensure all records are saved
@@ -194,6 +221,10 @@ class AuthService:
             refresh_token = create_refresh_token(identity=new_user.user_id)
 
             # Create response
+            roles = ['explorer']
+            if role_type == 'guide':
+                roles.append('guide')
+            
             response = {
                 "user_id": new_user.user_id,
                 "first_name": new_user.first_name,
@@ -201,7 +232,7 @@ class AuthService:
                 "email": new_user.email,
                 "access_token": access_token,
                 "refresh_token": refresh_token,
-                "roles": [role_type]
+                "roles": roles
             }
             
             # Add team info if created or joined

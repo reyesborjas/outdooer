@@ -437,16 +437,6 @@ CREATE TABLE IF NOT EXISTS public.location_aliases
     CONSTRAINT location_aliases_pkey PRIMARY KEY (alias_id)
 );
 
-CREATE TABLE IF NOT EXISTS public.locationaliases
-(
-    alias_id serial NOT NULL,
-    location_id integer,
-    alias_name character varying(255) COLLATE pg_catalog."default" NOT NULL,
-    language_code character(2) COLLATE pg_catalog."default",
-    is_primary boolean DEFAULT false,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT locationaliases_pkey PRIMARY KEY (alias_id)
-);
 
 CREATE TABLE IF NOT EXISTS public.locationfeatures
 (

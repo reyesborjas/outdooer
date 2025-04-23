@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create an axios instance with default config
 const api = axios.create({
-  // En Vite, las variables de entorno comienzan con VITE_ en lugar de REACT_APP_
+  // In Vite, environment variables start with VITE_ instead of REACT_APP_
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json',
@@ -35,7 +35,8 @@ api.interceptors.response.use(
     // Handle 401 Unauthorized errors (expired token, etc.)
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
-      // Optionally redirect to login page
+      
+      // Optionally redirect to login page if not already there
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }

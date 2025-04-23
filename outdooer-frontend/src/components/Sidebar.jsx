@@ -1,6 +1,6 @@
 // src/components/Sidebar.jsx
 import React, { useContext } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { 
   FaHome, 
@@ -21,7 +21,6 @@ import '../styles/Sidebar.css';
 import logo from '../assets/images/logo.png'; // Make sure to add your logo
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
-  const location = useLocation();
   const navigate = useNavigate();
   const { 
     user, 
@@ -61,17 +60,20 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { 
       path: '/my-expeditions', 
       name: 'My Expeditions', 
-      icon: <FaCalendarAlt /> 
+      icon: <FaCalendarAlt />,
+      show: isGuide()
     },
     { 
       path: '/my-activities', 
       name: 'My Activities', 
-      icon: <FaClipboardCheck /> 
+      icon: <FaClipboardCheck />,
+      show: isGuide()
     },
     { 
       path: '/teams', 
       name: 'Guide Teams', 
-      icon: <FaUsers /> 
+      icon: <FaUsers />,
+      show: isGuide()
     }
   ];
 
@@ -80,12 +82,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { 
       path: '/team-management', 
       name: 'Team Management', 
-      icon: <FaUsers /> 
+      icon: <FaUsers />,
+      show: isMasterGuide()
     },
     { 
       path: '/earnings', 
       name: 'Earnings', 
-      icon: <FaChartLine /> 
+      icon: <FaChartLine />,
+      show: isMasterGuide()
     }
   ];
 
@@ -94,24 +98,19 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { 
       path: '/admin', 
       name: 'Admin Panel', 
-      icon: <FaShieldAlt /> 
+      icon: <FaShieldAlt />,
+      show: isAdmin()
     }
   ];
 
   // Get the appropriate menu items based on user roles
-  let visibleMenuItems = [...commonMenuItems];
+  let menuItems = [...commonMenuItems];
   
-  if (isGuide()) {
-    visibleMenuItems = [...visibleMenuItems, ...guideMenuItems];
-  }
+  // Only add items that should be shown (based on role checks)
+  const roleBasedItems = [...guideMenuItems, ...masterGuideItems, ...adminItems]
+    .filter(item => item.show);
   
-  if (isMasterGuide()) {
-    visibleMenuItems = [...visibleMenuItems, ...masterGuideItems];
-  }
-  
-  if (isAdmin()) {
-    visibleMenuItems = [...visibleMenuItems, ...adminItems];
-  }
+  menuItems = [...menuItems, ...roleBasedItems];
 
   // Get appropriate role display
   const getRoleDisplay = () => {
@@ -143,7 +142,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </div>
 
         {/* User profile section */}
-        {isAuthenticated && (
+        {isAuthenticated() && (
           <div className="sidebar-user">
             <div className="user-avatar">
               {user?.profile_image_url ? (
@@ -174,7 +173,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         {/* Navigation menu */}
         <nav className="sidebar-nav">
           <ul>
-            {visibleMenuItems.map((item, index) => (
+            {menuItems.map((item, index) => (
               <li key={index}>
                 <NavLink 
                   to={item.path} 
@@ -190,14 +189,30 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
         {/* Bottom section with settings and logout */}
         <div className="sidebar-footer">
-          <NavLink to="/settings" className={({ isActive }) => isActive ? "active" : ""}>
-            <span className="icon"><FaCog /></span>
-            <span className="label">Settings</span>
-          </NavLink>
-          <button className="logout-btn" onClick={handleLogout}>
-            <span className="icon"><FaSignOutAlt /></span>
-            <span className="label">Logout</span>
-          </button>
+          {isAuthenticated() && (
+            <>
+              <NavLink to="/settings" className={({ isActive }) => isActive ? "active" : ""}>
+                <span className="icon"><FaCog /></span>
+                <span className="label">Settings</span>
+              </NavLink>
+              <button className="logout-btn" onClick={handleLogout}>
+                <span className="icon"><FaSignOutAlt /></span>
+                <span className="label">Logout</span>
+              </button>
+            </>
+          )}
+          {!isAuthenticated() && (
+            <>
+              <NavLink to="/login" className={({ isActive }) => isActive ? "active" : ""}>
+                <span className="icon"><FaUserCircle /></span>
+                <span className="label">Login</span>
+              </NavLink>
+              <NavLink to="/register" className={({ isActive }) => isActive ? "active" : ""}>
+                <span className="icon"><FaUserCircle /></span>
+                <span className="label">Register</span>
+              </NavLink>
+            </>
+          )}
         </div>
       </div>
 
