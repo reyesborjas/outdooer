@@ -1,5 +1,5 @@
 # app/api/activities/routes.py
-from flask import jsonify, request
+from flask import jsonify, request, redirect, url_for
 from . import activities_bp
 from app.models.activity import Activity
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -109,43 +109,33 @@ def get_my_activities():
     """Get activities based on user's role"""
     return get_my_activities_controller()
 
-# New routes for activity dates
+# Activity dates related routes
 
 @activities_bp.route('/<int:activity_id>/dates', methods=['GET'])
 @jwt_required()
 def get_activity_dates(activity_id):
     """Get all available dates for an activity"""
     try:
-        from app.models.activity_date import GuideActivityInstance, ActivityAvailableDate
-        
-        # Verify if activity exists
-        activity = Activity.query.get_or_404(activity_id)
-        
-        # Get all instances for this activity
-        instances = GuideActivityInstance.query.filter_by(activity_id=activity_id, is_active=True).all()
-        
-        # Get all dates from all instances
-        all_dates = []
-        for instance in instances:
-            dates = ActivityAvailableDate.query.filter_by(activity_instance_id=instance.instance_id).all()
-            
-            for date_obj in dates:
-                date_dict = date_obj.to_dict()
-                date_dict['guide_id'] = instance.guide_id
-                date_dict['guide_name'] = f"{instance.guide.first_name} {instance.guide.last_name}" if instance.guide else "Unknown"
-                all_dates.append(date_dict)
-        
-        return jsonify({"dates": all_dates}), 200
+        # Forward request to the activity_dates blueprint
+        return redirect(url_for('activity_dates.get_activity_dates', activity_id=activity_id))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 @activities_bp.route('/<int:activity_id>/dates', methods=['POST'])
 @jwt_required()
-def add_activity_date(activity_id):
+def add_date_to_activity(activity_id):
     """Add a new available date for an activity"""
     try:
-        # Redirect to activity_dates_bp endpoint
-        from app.api.activity_dates.routes import add_activity_date as add_date_handler
-        return add_date_handler(activity_id)
+        # Get current request data
+        data = request.get_json()
+        
+        # Add activity_id to the data if not already present
+        if 'activity_id' not in data:
+            data['activity_id'] = activity_id
+            
+        # Make an internal request to the activity_dates blueprint
+        # Instead of redirecting, we'll call the function directly to avoid HTTP redirect
+        from app.api.activity_dates.routes import add_activity_date
+        return add_activity_date()
     except Exception as e:
         return jsonify({"error": str(e)}), 500

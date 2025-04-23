@@ -8,10 +8,11 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, date, time
 from . import activity_dates_bp
 
-# Obtener instancias de actividad para un guía
+# Get guide instances for a guide
 @activity_dates_bp.route('/guide-instances', methods=['GET'])
 @jwt_required()
 def get_guide_instances():
+    """Get activity instances for the current guide"""
     try:
         current_user_id = get_jwt_identity()
         instances = GuideActivityInstance.query.filter_by(guide_id=current_user_id, is_active=True).all()
@@ -19,18 +20,19 @@ def get_guide_instances():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Crear una instancia de actividad para un guía
+# Create a guide instance for an activity
 @activity_dates_bp.route('/guide-instances', methods=['POST'])
 @jwt_required()
 def create_guide_instance():
+    """Create a new activity instance for a guide"""
     try:
         data = request.json
         current_user_id = get_jwt_identity()
         
-        # Verificar que la actividad existe
+        # Verify activity exists
         activity = Activity.query.get_or_404(data.get('activity_id'))
         
-        # Verificar permisos
+        # Verify permissions
         if activity.team_id:
             team_member = TeamMember.query.filter_by(
                 user_id=current_user_id,
@@ -40,7 +42,7 @@ def create_guide_instance():
             if not team_member:
                 return jsonify({'error': 'You are not a member of this team'}), 403
         
-        # Crear la instancia
+        # Create the instance
         instance = GuideActivityInstance(
             guide_id=current_user_id,
             activity_id=activity.activity_id,
@@ -59,16 +61,24 @@ def create_guide_instance():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# Agregar una fecha disponible para una actividad
-def add_activity_date(activity_id):
+# Add a date to an activity instance
+@activity_dates_bp.route('/add-date', methods=['POST'])
+@jwt_required()
+def add_activity_date():
+    """Add a new available date for an activity"""
     try:
         data = request.json
         current_user_id = get_jwt_identity()
         
-        # Verificar que la actividad existe
+        # Get activity ID from request
+        activity_id = data.get('activity_id')
+        if not activity_id:
+            return jsonify({'error': 'Activity ID is required'}), 400
+            
+        # Verify that the activity exists
         activity = Activity.query.get_or_404(activity_id)
         
-        # Verificar permisos para editar la actividad
+        # Verify permissions for editing the activity
         if activity.team_id:
             team_member = TeamMember.query.filter_by(
                 user_id=current_user_id,
@@ -78,11 +88,11 @@ def add_activity_date(activity_id):
             if not team_member:
                 return jsonify({'error': 'You are not a member of this team'}), 403
             
-            # Solo ciertos roles pueden agregar fechas
+            # Only certain roles can add dates
             if team_member.role_level > 3 and activity.created_by != current_user_id and activity.leader_id != current_user_id:
                 return jsonify({'error': 'You do not have permission to add dates to this activity'}), 403
         
-        # Buscar o crear una instancia de actividad para este guía
+        # Find or create activity instance for this guide
         instance = GuideActivityInstance.query.filter_by(
             guide_id=current_user_id, 
             activity_id=activity_id,
@@ -97,16 +107,17 @@ def add_activity_date(activity_id):
                 is_active=True
             )
             db.session.add(instance)
-            db.session.flush()  # Obtener el ID sin hacer commit
+            db.session.flush()  # Get ID without commit
         
-        # Crear la fecha disponible
+        # Validate and parse date and time
         try:
             date_value = date.fromisoformat(data.get('date'))
             start_time_value = time.fromisoformat(data.get('start_time'))
             end_time_value = time.fromisoformat(data.get('end_time'))
         except (ValueError, TypeError):
-            return jsonify({'error': 'Invalid date or time format'}), 400
+            return jsonify({'error': 'Invalid date or time format. Use YYYY-MM-DD for date and HH:MM:SS for time'}), 400
             
+        # Create the date
         activity_date = ActivityAvailableDate(
             activity_instance_id=instance.instance_id,
             date=date_value,
@@ -120,10 +131,11 @@ def add_activity_date(activity_id):
         db.session.add(activity_date)
         db.session.commit()
         
-        # Preparar respuesta con datos adicionales
+        # Prepare response with additional data
         date_dict = activity_date.to_dict()
         date_dict['guide_id'] = instance.guide_id
         date_dict['guide_name'] = f"{instance.guide.first_name} {instance.guide.last_name}" if instance.guide else "Unknown"
+        date_dict['activity_id'] = activity_id
         
         return jsonify({
             'message': 'Activity date added successfully',
@@ -133,64 +145,123 @@ def add_activity_date(activity_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# Actualizar una fecha disponible
+# Get dates for an activity
+@activity_dates_bp.route('/for-activity/<int:activity_id>', methods=['GET'])
+@jwt_required()
+def get_activity_dates(activity_id):
+    """Get all available dates for an activity"""
+    try:
+        # Verify if activity exists
+        activity = Activity.query.get_or_404(activity_id)
+        
+        # Get all instances for this activity
+        instances = GuideActivityInstance.query.filter_by(activity_id=activity_id, is_active=True).all()
+        
+        # Get all dates from all instances
+        all_dates = []
+        for instance in instances:
+            dates = ActivityAvailableDate.query.filter_by(activity_instance_id=instance.instance_id).all()
+            
+            for date_obj in dates:
+                date_dict = date_obj.to_dict()
+                date_dict['guide_id'] = instance.guide_id
+                date_dict['guide_name'] = f"{instance.guide.first_name} {instance.guide.last_name}" if instance.guide else "Unknown"
+                date_dict['activity_id'] = activity_id
+                all_dates.append(date_dict)
+        
+        return jsonify({"dates": all_dates}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Get my available dates (dates for activities led by the current user)
+@activity_dates_bp.route('/my-dates', methods=['GET'])
+@jwt_required()
+def get_my_activity_dates():
+    """Get all available dates for activities led by the current user"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Get instances for this guide
+        instances = GuideActivityInstance.query.filter_by(guide_id=current_user_id, is_active=True).all()
+        
+        # Get all dates for all instances
+        all_dates = []
+        for instance in instances:
+            dates = ActivityAvailableDate.query.filter_by(activity_instance_id=instance.instance_id).all()
+            
+            for date_obj in dates:
+                date_dict = date_obj.to_dict()
+                date_dict['guide_id'] = instance.guide_id
+                date_dict['activity_id'] = instance.activity_id
+                date_dict['activity_title'] = instance.activity.title if instance.activity else "Unknown"
+                all_dates.append(date_dict)
+        
+        return jsonify({"dates": all_dates}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Update a date
 @activity_dates_bp.route('/activity-dates/<int:date_id>', methods=['PUT'])
 @jwt_required()
 def update_activity_date(date_id):
+    """Update an existing activity date"""
     try:
         data = request.json
         current_user_id = get_jwt_identity()
         
-        # Verificar que la fecha existe
+        # Verify that the date exists
         activity_date = ActivityAvailableDate.query.get_or_404(date_id)
         
-        # Verificar que el usuario es el guía de esta fecha
+        # Verify that the user is the guide for this date
         instance = GuideActivityInstance.query.get(activity_date.activity_instance_id)
         if not instance or instance.guide_id != current_user_id:
-            # Verificar si es Master Guide o Tactical Guide del equipo
+            # Check if the user is a Master Guide or Tactical Guide for the team
             if instance and instance.team_id:
                 team_member = TeamMember.query.filter_by(
                     user_id=current_user_id,
                     team_id=instance.team_id
                 ).first()
                 
-                if not team_member or team_member.role_level > 2:  # Solo Master Guide y Tactical Guide
+                if not team_member or team_member.role_level > 2:  # Only Master Guide and Tactical Guide
                     return jsonify({'error': 'You do not have permission to update this date'}), 403
             else:
                 return jsonify({'error': 'You do not have permission to update this date'}), 403
         
-        # Actualizar los campos
+        # Update the fields
         if 'date' in data:
             try:
                 activity_date.date = date.fromisoformat(data['date'])
             except ValueError:
-                return jsonify({'error': 'Invalid date format'}), 400
+                return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
                 
         if 'start_time' in data:
             try:
                 activity_date.start_time = time.fromisoformat(data['start_time'])
             except ValueError:
-                return jsonify({'error': 'Invalid start time format'}), 400
+                return jsonify({'error': 'Invalid start time format. Use HH:MM:SS'}), 400
                 
         if 'end_time' in data:
             try:
                 activity_date.end_time = time.fromisoformat(data['end_time'])
             except ValueError:
-                return jsonify({'error': 'Invalid end time format'}), 400
+                return jsonify({'error': 'Invalid end time format. Use HH:MM:SS'}), 400
                 
         if 'max_reservations' in data:
             activity_date.max_reservations = data['max_reservations']
+            
         if 'location' in data:
             activity_date.location = data['location']
+            
         if 'status' in data:
             activity_date.status = data['status']
         
         db.session.commit()
         
-        # Preparar respuesta con datos adicionales
+        # Prepare response with additional data
         date_dict = activity_date.to_dict()
         date_dict['guide_id'] = instance.guide_id
         date_dict['guide_name'] = f"{instance.guide.first_name} {instance.guide.last_name}" if instance.guide else "Unknown"
+        date_dict['activity_id'] = instance.activity_id
         
         return jsonify({
             'message': 'Activity date updated successfully',
@@ -200,36 +271,37 @@ def update_activity_date(date_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# Eliminar una fecha disponible
+# Delete a date
 @activity_dates_bp.route('/activity-dates/<int:date_id>', methods=['DELETE'])
 @jwt_required()
 def delete_activity_date(date_id):
+    """Delete an activity date"""
     try:
         current_user_id = get_jwt_identity()
         
-        # Verificar que la fecha existe
+        # Verify that the date exists
         activity_date = ActivityAvailableDate.query.get_or_404(date_id)
         
-        # Verificar que el usuario es el guía de esta fecha
+        # Verify that the user is the guide for this date
         instance = GuideActivityInstance.query.get(activity_date.activity_instance_id)
         if not instance or instance.guide_id != current_user_id:
-            # Verificar si es Master Guide o Tactical Guide del equipo
+            # Check if the user is a Master Guide or Tactical Guide for the team
             if instance and instance.team_id:
                 team_member = TeamMember.query.filter_by(
                     user_id=current_user_id,
                     team_id=instance.team_id
                 ).first()
                 
-                if not team_member or team_member.role_level > 2:  # Solo Master Guide y Tactical Guide
+                if not team_member or team_member.role_level > 2:  # Only Master Guide and Tactical Guide
                     return jsonify({'error': 'You do not have permission to delete this date'}), 403
             else:
                 return jsonify({'error': 'You do not have permission to delete this date'}), 403
         
-        # Verificar si hay reservas para esta fecha
+        # Check if there are reservations for this date
         if activity_date.current_reservations > 0:
             return jsonify({'error': 'Cannot delete a date with existing reservations'}), 400
         
-        # Eliminar la fecha
+        # Delete the date
         db.session.delete(activity_date)
         db.session.commit()
         

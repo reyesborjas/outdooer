@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
-import { FaCalendarPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaCalendarPlus, FaEdit, FaTrash, FaUserCheck } from 'react-icons/fa';
 import '../styles/ActivityDates.css';
 
 const ActivityDates = () => {
@@ -16,6 +16,7 @@ const ActivityDates = () => {
   // Activity data
   const [activity, setActivity] = useState(null);
   const [activityDates, setActivityDates] = useState([]);
+  const [guideInstance, setGuideInstance] = useState(null);
   
   // UI state
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,23 @@ const ActivityDates = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [dateToDelete, setDateToDelete] = useState(null);
   
+  // Format time string to ensure it has seconds (HH:MM:SS)
+  const formatTimeWithSeconds = (timeString) => {
+    if (!timeString) return '';
+    
+    // If the time already has seconds (HH:MM:SS), return as is
+    if (/^\d{2}:\d{2}:\d{2}$/.test(timeString)) {
+      return timeString;
+    }
+    
+    // If the time is in HH:MM format, add :00 for seconds
+    if (/^\d{2}:\d{2}$/.test(timeString)) {
+      return `${timeString}:00`;
+    }
+    
+    return timeString;
+  };
+  
   // Check if user is authorized
   useEffect(() => {
     if (!isAuthenticated || !isGuide()) {
@@ -45,7 +63,7 @@ const ActivityDates = () => {
     }
   }, [isAuthenticated, isGuide, navigate]);
   
-  // Fetch activity data and dates
+  // Fetch activity data, dates, and check guide instance
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -60,9 +78,41 @@ const ActivityDates = () => {
         // Fetch activity dates
         const datesResponse = await api.get(`/activities/${activityId}/dates`);
         setActivityDates(datesResponse.data.dates || []);
+        
+        // Check if current guide has an instance for this activity
+        try {
+          const instancesResponse = await api.get('/activity-dates/guide-instances');
+          const instances = instancesResponse.data.instances || [];
+          const existingInstance = instances.find(instance => instance.activity_id === parseInt(activityId));
+          
+          setGuideInstance(existingInstance || null);
+        } catch (instanceErr) {
+          console.warn('Could not check guide instances:', instanceErr);
+          // Non-blocking error, don't show to user
+        }
       } catch (err) {
         console.error('Error fetching activity data:', err);
-        setError('Failed to load activity data. Please try again.');
+        
+        // Enhanced error handling
+        if (err.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          if (err.response.status === 404) {
+            setError('Activity not found. It may have been deleted or you may not have permission to access it.');
+          } else if (err.response.status === 403) {
+            setError('You do not have permission to access this activity.');
+          } else if (err.response.data && err.response.data.error) {
+            setError(`Server error: ${err.response.data.error}`);
+          } else {
+            setError(`Error ${err.response.status}: Failed to load activity data.`);
+          }
+        } else if (err.request) {
+          // The request was made but no response was received
+          setError('Network error. Please check your internet connection and try again.');
+        } else {
+          // Something happened in setting up the request
+          setError('An unexpected error occurred. Please try again.');
+        }
       } finally {
         setLoading(false);
       }
@@ -72,6 +122,28 @@ const ActivityDates = () => {
       fetchData();
     }
   }, [isAuthenticated, activityId]);
+  
+  // Create guide instance if needed
+  const ensureGuideInstance = async () => {
+    // If guide instance already exists, return it
+    if (guideInstance) {
+      return guideInstance;
+    }
+    
+    try {
+      // Create a new guide instance
+      const response = await api.post('/activity-dates/guide-instances', {
+        activity_id: activityId
+      });
+      
+      const newInstance = response.data.instance;
+      setGuideInstance(newInstance);
+      return newInstance;
+    } catch (err) {
+      console.error('Error creating guide instance:', err);
+      throw new Error('Failed to create guide instance. Please try again.');
+    }
+  };
   
   // Handle date form input changes
   const handleDateFormChange = (e) => {
@@ -93,8 +165,13 @@ const ActivityDates = () => {
   // Open modal to add a new date
   const handleAddDate = () => {
     setEditingDate(null);
+    // Get tomorrow's date in YYYY-MM-DD format
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
     setDateForm({
-      date: '',
+      date: tomorrowStr,
       start_time: '09:00',
       end_time: '17:00',
       max_reservations: 10,
@@ -107,10 +184,15 @@ const ActivityDates = () => {
   // Open modal to edit an existing date
   const handleEditDate = (date) => {
     setEditingDate(date);
+    
+    // Parse start and end times to ensure they are in HH:MM format
+    const startTime = date.start_time.substring(0, 5);
+    const endTime = date.end_time.substring(0, 5);
+    
     setDateForm({
       date: new Date(date.date).toISOString().split('T')[0],
-      start_time: date.start_time,
-      end_time: date.end_time,
+      start_time: startTime,
+      end_time: endTime,
       max_reservations: date.max_reservations,
       location: date.location || '',
       status: date.status
@@ -124,29 +206,49 @@ const ActivityDates = () => {
     setShowDeleteModal(true);
   };
   
+  // Prepare date data for API submission
+  const prepareDateData = (formData) => {
+    return {
+      ...formData,
+      activity_id: parseInt(activityId, 10),
+      start_time: formatTimeWithSeconds(formData.start_time),
+      end_time: formatTimeWithSeconds(formData.end_time)
+    };
+  };
+  
   // Handle date form submission (add or update)
   const handleDateFormSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     
     try {
+      // Ensure time fields have seconds
+      const preparedData = prepareDateData(dateForm);
+      
       if (editingDate) {
         // Update existing date
-        await api.put(`/activity-dates/${editingDate.available_date_id}`, dateForm);
+        await api.put(`/activity-dates/activity-dates/${editingDate.available_date_id}`, preparedData);
         
         // Update local state
         setActivityDates(
           activityDates.map(date => 
             date.available_date_id === editingDate.available_date_id 
-              ? { ...date, ...dateForm } 
+              ? { 
+                  ...date, 
+                  ...preparedData,
+                  date: preparedData.date, // Ensure date format is consistent
+                } 
               : date
           )
         );
         
         setSuccess('Date updated successfully!');
       } else {
+        // Ensure we have a guide instance
+        await ensureGuideInstance();
+        
         // Add new date
-        const response = await api.post(`/activities/${activityId}/dates`, dateForm);
+        const response = await api.post(`/activity-dates/add-date`, preparedData);
         
         // Add to local state
         setActivityDates([...activityDates, response.data.date]);
@@ -158,7 +260,23 @@ const ActivityDates = () => {
       setShowDateModal(false);
     } catch (err) {
       console.error('Error saving date:', err);
-      setError(err.response?.data?.error || 'Failed to save date. Please try again.');
+      
+      // Enhanced error handling
+      if (err.response) {
+        if (err.response.status === 400) {
+          setError(`Validation error: ${err.response.data.error || 'Please check your inputs.'}`);
+        } else if (err.response.status === 403) {
+          setError('Permission denied: You do not have permission to modify dates for this activity.');
+        } else if (err.response.data && err.response.data.error) {
+          setError(`Server error: ${err.response.data.error}`);
+        } else {
+          setError(`Error ${err.response.status}: Failed to save date.`);
+        }
+      } else if (err.request) {
+        setError('Network error. Please check your internet connection and try again.');
+      } else {
+        setError(err.message || 'An unexpected error occurred. Please try again.');
+      }
     }
   };
   
@@ -167,7 +285,7 @@ const ActivityDates = () => {
     if (!dateToDelete) return;
     
     try {
-      await api.delete(`/activity-dates/${dateToDelete.available_date_id}`);
+      await api.delete(`/activity-dates/activity-dates/${dateToDelete.available_date_id}`);
       
       // Update local state
       setActivityDates(
@@ -179,7 +297,25 @@ const ActivityDates = () => {
       setDateToDelete(null);
     } catch (err) {
       console.error('Error deleting date:', err);
-      setError('Failed to delete date. Please try again.');
+      
+      // Enhanced error handling
+      if (err.response) {
+        if (err.response.status === 400) {
+          setError(`Cannot delete date: ${err.response.data.error || 'It may have reservations.'}`);
+        } else if (err.response.status === 403) {
+          setError('Permission denied: You do not have permission to delete this date.');
+        } else if (err.response.data && err.response.data.error) {
+          setError(`Server error: ${err.response.data.error}`);
+        } else {
+          setError(`Error ${err.response.status}: Failed to delete date.`);
+        }
+      } else if (err.request) {
+        setError('Network error. Please check your internet connection and try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
+      
+      setShowDeleteModal(false);
     }
   };
   
@@ -254,6 +390,21 @@ const ActivityDates = () => {
                 <strong> Difficulty:</strong> {activity.difficulty_level} | 
                 <strong> Price:</strong> ${activity.price}
               </p>
+              
+              {guideInstance ? (
+                <Alert variant="info">
+                  <div className="d-flex align-items-center">
+                    <FaUserCheck className="me-2" />
+                    <span>You are registered as a guide for this activity.</span>
+                  </div>
+                </Alert>
+              ) : (
+                <Alert variant="warning">
+                  <p>
+                    You'll be automatically registered as a guide for this activity when you add your first available date.
+                  </p>
+                </Alert>
+              )}
             </div>
           )}
           
@@ -287,7 +438,7 @@ const ActivityDates = () => {
                     <tr key={date.available_date_id}>
                       <td>{formatDate(date.date)}</td>
                       <td>
-                        {date.start_time} - {date.end_time}
+                        {date.start_time.substring(0, 5)} - {date.end_time.substring(0, 5)}
                       </td>
                       <td>{date.location || activity?.location_name || 'Default location'}</td>
                       <td>{date.max_reservations}</td>
@@ -322,6 +473,7 @@ const ActivityDates = () => {
                             size="sm"
                             onClick={() => handleDeleteDateConfirm(date)}
                             disabled={date.current_reservations > 0}
+                            title={date.current_reservations > 0 ? "Cannot delete dates with reservations" : "Delete date"}
                           >
                             <FaTrash />
                           </Button>
@@ -353,6 +505,9 @@ const ActivityDates = () => {
                 required
                 min={new Date().toISOString().split('T')[0]}
               />
+              <Form.Text className="text-muted">
+                Date format: YYYY-MM-DD
+              </Form.Text>
             </Form.Group>
             
             <Row>
@@ -366,6 +521,9 @@ const ActivityDates = () => {
                     onChange={handleDateFormChange}
                     required
                   />
+                  <Form.Text className="text-muted">
+                    24-hour format (HH:MM)
+                  </Form.Text>
                 </Form.Group>
               </Col>
               <Col>
@@ -378,6 +536,9 @@ const ActivityDates = () => {
                     onChange={handleDateFormChange}
                     required
                   />
+                  <Form.Text className="text-muted">
+                    24-hour format (HH:MM)
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
@@ -445,7 +606,7 @@ const ActivityDates = () => {
           {dateToDelete && (
             <p>
               Are you sure you want to delete the date:<br />
-              <strong>{formatDate(dateToDelete.date)} ({dateToDelete.start_time} - {dateToDelete.end_time})</strong>?
+              <strong>{formatDate(dateToDelete.date)} ({dateToDelete.start_time.substring(0, 5)} - {dateToDelete.end_time.substring(0, 5)})</strong>?
             </p>
           )}
           <Alert variant="warning">

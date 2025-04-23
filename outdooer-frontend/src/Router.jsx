@@ -52,7 +52,7 @@ const Router = () => {
         {/* Activity Management */}
         <Route path="/create-activity" element={<NewActivity />} />
         <Route path="/edit-activity/:activityId" element={<EditActivity />} />
-        <Route path="/activity-dates/:activityId" element={<ActivityDates />} />
+        <Route path="/activities/:activityId/dates" element={<ActivityDates />} />
         <Route path="/my-activities" element={<MyActivities />} />
         
         {/* Expedition Management */}

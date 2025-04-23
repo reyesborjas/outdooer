@@ -63,6 +63,14 @@ def create_app(config_name):
     # Register expeditions blueprint
     from app.api.expeditions import expeditions_bp
     app.register_blueprint(expeditions_bp, url_prefix='/api/expeditions')
+    
+    # Register activity_dates blueprint
+    from app.api.activity_dates import activity_dates_bp
+    app.register_blueprint(activity_dates_bp, url_prefix='/api/activity-dates')
+    
+    # Register resources blueprint
+    from app.api.resources import resources_bp
+    app.register_blueprint(resources_bp, url_prefix='/api/resources')
 
     # Health check
     @app.route('/api/health')
