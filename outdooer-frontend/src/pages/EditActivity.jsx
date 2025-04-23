@@ -7,6 +7,7 @@ import { activitiesApi } from '../api/activities';
 import '../styles/ActivityForm.css';
 import SearchableDropdown from '../components/SearchableDropdown';
 import SimilarActivityWarning from '../components/SimilarActivityWarning';
+import api from '../api';
 
 const EditActivity = () => {
   const { activityId } = useParams();
@@ -108,21 +109,20 @@ const EditActivity = () => {
     }
   }, [isAuthenticated, activityId, canEditActivity]);
 
-  // Fetch team members for leader selection
-  const fetchTeamMembers = async (teamId) => {
-    if (!teamId) return;
-    
-    try {
-      setLoadingTeamMembers(true);
-      const response = await fetch(`/teams/${teamId}/members`);
-      setTeamMembers(response.data.members || []);
-
-    } catch (err) {
-      console.error('Error fetching team members:', err);
-    } finally {
-      setLoadingTeamMembers(false);
-    }
-  };
+    // Fetch team members for leader selection
+    const fetchTeamMembers = async (teamId) => {
+      if (!teamId) return;
+      
+      try {
+        setLoadingTeamMembers(true);
+        const response = await api.get(`/teams/${teamId}/members`);
+        setTeamMembers(response.data.members || []);
+      } catch (err) {
+        console.error('Error fetching team members:', err);
+      } finally {
+        setLoadingTeamMembers(false);
+      }
+    };
 
   // Fetch necessary data
   useEffect(() => {
