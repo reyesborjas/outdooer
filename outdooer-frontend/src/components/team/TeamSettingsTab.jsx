@@ -152,7 +152,7 @@ const TeamSettingsTab = ({ team, refreshTeam, setSuccessMessage, setError }) => 
     try {
       setIsSubmitting(true);
       
-      await api.put(`/api/teams/${team.team_id}/role-config`, roleConfig);
+      await api.put(`/teams/${team.team_id}/role-config`, roleConfig);
       
       // Clear any existing errors
       setError(null);
@@ -184,7 +184,7 @@ const TeamSettingsTab = ({ team, refreshTeam, setSuccessMessage, setError }) => 
     try {
       setIsSubmitting(true);
       
-      await api.put(`/api/teams/${team.team_id}`, {
+      await api.put(`/teams/${team.team_id}`, {
         team_status: status
       });
       
@@ -216,7 +216,7 @@ const TeamSettingsTab = ({ team, refreshTeam, setSuccessMessage, setError }) => 
     try {
       setIsSubmitting(true);
       
-      await api.delete(`/api/teams/${team.team_id}`);
+      await api.delete(`/teams/${team.team_id}`);
       
       setSuccessMessage(
         <>

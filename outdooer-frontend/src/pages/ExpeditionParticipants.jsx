@@ -10,7 +10,7 @@ import {
   FaUserPlus, FaEnvelope, FaCheck, FaTimes, FaEdit,
   FaTrash, FaInfoCircle
 } from 'react-icons/fa';
-import { expeditionsApi } from '../api/expeditions';
+import { expeditionsApi } from '../api/expedition';
 import '../styles/ExpeditionParticipants.css';
 
 const ExpeditionParticipants = () => {

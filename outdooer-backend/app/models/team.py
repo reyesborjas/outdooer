@@ -12,14 +12,14 @@ class Team(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     team_status = db.Column(db.String(20), default='active')
     
-    # Define relationships
+    # Define relationships without using conflicting backrefs
+    master_guide = db.relationship('User', foreign_keys=[master_guide_id])
     members = db.relationship('TeamMember', back_populates='team', lazy='dynamic', cascade='all, delete-orphan')
     role_config = db.relationship('TeamRoleConfiguration', back_populates='team', uselist=False, cascade='all, delete-orphan')
     
-    # Using strings for some relationships to avoid circular imports
-    activities = db.relationship('Activity', back_populates='team')
-    expeditions = db.relationship('Expedition', back_populates='team')
-    invitation_codes = db.relationship('InvitationCode', back_populates='team')
+    # Using relationships without backrefs to avoid conflicts
+    activities = db.relationship('Activity', foreign_keys='Activity.team_id')
+    expeditions = db.relationship('Expedition', foreign_keys='Expedition.team_id')
     
     def __repr__(self):
         return f'<Team {self.team_name}>'
@@ -34,6 +34,7 @@ class Team(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
+# Other related models can be added here if needed
 class TeamMember(db.Model):
     __tablename__ = 'team_members'
     
@@ -52,7 +53,7 @@ class TeamMember(db.Model):
     
     def __repr__(self):
         return f'<TeamMember {self.user_id} in {self.team_id}>'
-    
+
 class TeamRoleConfiguration(db.Model):
     __tablename__ = 'team_role_configurations'
     

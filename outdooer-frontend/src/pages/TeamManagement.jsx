@@ -50,16 +50,16 @@ const TeamManagement = () => {
         }
 
         // Fetch team details
-        const teamResponse = await api.get(`/api/teams/${currentTeamId}`);
+        const teamResponse = await api.get(`/teams/${currentTeamId}`);
         setTeam(teamResponse.data.team);
         
         // Fetch team members
-        const membersResponse = await api.get(`/api/teams/${currentTeamId}/members`);
+        const membersResponse = await api.get(`/teams/${currentTeamId}/members`);
         setMembers(membersResponse.data.members || []);
 
         // If user is master guide or tactical guide, fetch invitations
         if (teamResponse.data.team.user_role_level <= 2) {
-          const invitationsResponse = await api.get(`/api/teams/${currentTeamId}/invitations`);
+          const invitationsResponse = await api.get(`/teams/${currentTeamId}/invitations`);
           setInvitations(invitationsResponse.data.invitations || []);
         }
       } catch (err) {
@@ -81,14 +81,14 @@ const TeamManagement = () => {
       if (!team) return;
       
       setLoading(true);
-      const teamResponse = await api.get(`/api/teams/${team.team_id}`);
+      const teamResponse = await api.get(`/teams/${team.team_id}`);
       setTeam(teamResponse.data.team);
       
-      const membersResponse = await api.get(`/api/teams/${team.team_id}/members`);
+      const membersResponse = await api.get(`/teams/${team.team_id}/members`);
       setMembers(membersResponse.data.members || []);
       
       if (team.user_role_level <= 2) {
-        const invitationsResponse = await api.get(`/api/teams/${team.team_id}/invitations`);
+        const invitationsResponse = await api.get(`/teams/${team.team_id}/invitations`);
         setInvitations(invitationsResponse.data.invitations || []);
       }
     } catch (err) {

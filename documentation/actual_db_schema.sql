@@ -413,6 +413,7 @@ CREATE TABLE IF NOT EXISTS public.invitation_codes
     expires_at timestamp without time zone,
     is_active boolean DEFAULT true,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    metadata jsonb DEFAULT '{}'::jsonb,
     CONSTRAINT invitation_codes_pkey PRIMARY KEY (code_id),
     CONSTRAINT invitation_codes_code_key UNIQUE (code)
 );
@@ -916,15 +917,7 @@ CREATE TABLE IF NOT EXISTS public.useractivitylogs
     CONSTRAINT useractivitylogs_pkey PRIMARY KEY (activity_log_id)
 );
 
-CREATE TABLE IF NOT EXISTS public.userroles
-(
-    user_role_id serial NOT NULL,
-    user_id integer,
-    role_type character varying(20) COLLATE pg_catalog."default" NOT NULL,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT userroles_pkey PRIMARY KEY (user_role_id),
-    CONSTRAINT userroles_user_id_role_type_key UNIQUE (user_id, role_type)
-);
+
 
 CREATE TABLE IF NOT EXISTS public.users
 (

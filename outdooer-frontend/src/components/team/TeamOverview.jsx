@@ -17,8 +17,8 @@ const TeamOverview = ({ team, members }) => {
 
         // Fetch activities and expeditions
         const [activitiesResponse, expeditionsResponse] = await Promise.all([
-          api.get(`/api/activities/team/${team.team_id}`),
-          api.get(`/api/expeditions/team/${team.team_id}`)
+          api.get(`/activities/team/${team.team_id}`),
+          api.get(`/expeditions/team/${team.team_id}`)
         ]);
 
         setActivities(activitiesResponse.data.activities || []);

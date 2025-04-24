@@ -21,7 +21,7 @@ const TeamInvitationsTab = ({ team, invitations, refreshTeam, setSuccessMessage,
     try {
       setIsGenerating(true);
       
-      const response = await api.post(`/api/teams/${team.team_id}/invitations`, {
+      const response = await api.post(`/teams/${team.team_id}/invitations`, {
         role_level: roleLevel,
         max_uses: maxUses,
         expires_in_days: expiresInDays

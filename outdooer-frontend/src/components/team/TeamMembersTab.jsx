@@ -43,7 +43,7 @@ const TeamMembersTab = ({ team, members, refreshTeam, setSuccessMessage, setErro
     try {
       setIsSubmitting(true);
       
-      await api.put(`/api/teams/${team.team_id}/members/${selectedMember.user_id}/role`, {
+      await api.put(`/teams/${team.team_id}/members/${selectedMember.user_id}/role`, {
         role_level: newRoleLevel
       });
       
@@ -65,7 +65,7 @@ const TeamMembersTab = ({ team, members, refreshTeam, setSuccessMessage, setErro
     try {
       setIsSubmitting(true);
       
-      await api.delete(`/api/teams/${team.team_id}/members/${selectedMember.user_id}`);
+      await api.delete(`/teams/${team.team_id}/members/${selectedMember.user_id}`);
       
       setSuccessMessage('Member removed from team successfully!');
       handleCloseModals();

@@ -1,0 +1,149 @@
+/* src/styles/ExpeditionParticipants.css */
+.expedition-participants-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .expedition-participants-container .card {
+    border-color: rgba(95, 158, 160, 0.2);
+  }
+  
+  .expedition-participants-container .card-header {
+    background-color: rgba(95, 158, 160, 0.1);
+    border-bottom: 1px solid rgba(95, 158, 160, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .expedition-info {
+    margin-bottom: 1.5rem;
+  }
+  
+  .expedition-detail {
+    margin-right: 1.5rem;
+  }
+  
+  .expedition-detail .detail-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+  }
+  
+  .expedition-detail .detail-value {
+    font-weight: 500;
+    color: #2a6169;
+  }
+  
+  .participants-table th {
+    background-color: rgba(95, 158, 160, 0.1);
+    color: #2a6169;
+    border-color: rgba(95, 158, 160, 0.2);
+  }
+  
+  .reservations-table th {
+    background-color: rgba(95, 158, 160, 0.1);
+    color: #2a6169;
+    border-color: rgba(95, 158, 160, 0.2);
+  }
+  
+  .nav-tabs .nav-link {
+    color: #4a7f80;
+  }
+  
+  .nav-tabs .nav-link.active {
+    color: #2a6169;
+    font-weight: 500;
+    border-color: rgba(95, 158, 160, 0.2) rgba(95, 158, 160, 0.2) #fff;
+  }
+  
+  .btn-group .btn {
+    display: inline-flex;
+    align-items: center;
+  }
+  
+  .btn-group .btn svg {
+    margin-right: 0.25rem;
+  }
+  
+  .badge.bg-success {
+    background-color: #5cb85c !important;
+  }
+  
+  .badge.bg-warning {
+    background-color: #f0ad4e !important;
+    color: #212529;
+  }
+  
+  .badge.bg-danger {
+    background-color: #d9534f !important;
+  }
+  
+  .badge.bg-info {
+    background-color: #5bc0de !important;
+  }
+  
+  .badge.bg-secondary {
+    background-color: #6c757d !important;
+  }
+  
+  /* Modal styles */
+  .modal-header {
+    background-color: rgba(95, 158, 160, 0.1);
+    border-bottom: 1px solid rgba(95, 158, 160, 0.2);
+  }
+  
+  .modal-title {
+    color: #2a6169;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 767px) {
+    .expedition-participants-container {
+      padding: 0 10px;
+    }
+  
+    .expedition-info {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .expedition-detail {
+      margin-right: 0;
+      margin-bottom: 0.5rem;
+    }
+  
+    .table-responsive {
+      font-size: 0.875rem;
+    }
+  
+    .btn-group .btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+  }
+  
+  /* Tabs */
+  .nav-tabs {
+    border-bottom-color: rgba(95, 158, 160, 0.2);
+  }
+  
+  /* Action buttons */
+  .btn-outline-primary {
+    color: #5f9ea0;
+    border-color: #5f9ea0;
+  }
+  
+  .btn-outline-primary:hover {
+    background-color: rgba(95, 158, 160, 0.1);
+  }
+  
+  .btn-outline-danger {
+    color: #d9534f;
+    border-color: #d9534f;
+  }
+  
+  .btn-outline-danger:hover {
+    background-color: rgba(217, 83, 79, 0.1);
+  }

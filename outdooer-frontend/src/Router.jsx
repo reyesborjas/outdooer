@@ -1,4 +1,4 @@
-// src/Router.jsx - Updated with new routes
+// src/Router.jsx
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -9,26 +9,27 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import Dashboard from './components/Dashboard';
 import ActivityDetails from './pages/ActivityDetails';
 
-// New components for activity and expedition management
+// Activity Management Pages
 import NewActivity from './pages/NewActivity';
 import EditActivity from './pages/EditActivity';
 import ActivityDates from './pages/ActivityDates';
 import MyActivities from './pages/MyActivities';
+
+// Expedition Management Pages
 import NewExpedition from './pages/NewExpedition';
 import EditExpedition from './pages/EditExpedition';
 import MyExpeditions from './pages/MyExpeditions';
+import ExpeditionParticipants from './pages/ExpeditionParticipants';
 
-// New components for team management
+// Team Management Pages
 import TeamManagement from './pages/TeamManagement';
-// Importamos los componentes que faltaban
+import TeamDashboard from './pages/TeamDashboard';
 
-
-import TeamInvitationsTab from '../components/team/TeamInvitationsTab';
-import TeamExpeditionsTab from '../components/team/TeamExpeditionsTab';
-import TeamActivitiesTab from '../components/team/TeamActivitiesTab';
-import TeamMembersTab from '../components/team/TeamMembersTab';
-import TeamManagement from './pages/TeamManagement';
-
+// Team Related Components
+import TeamInvitationsTab from './components/team/TeamInvitationsTab';
+import TeamExpeditionsTab from './components/team/TeamExpeditionsTab';
+import TeamActivitiesTab from './components/team/TeamActivitiesTab';
+import TeamMembersTab from './components/team/TeamMembersTab';
 
 const Router = () => {
   return (
@@ -48,7 +49,6 @@ const Router = () => {
       {/* Protected routes (require authentication) */}
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/activities/:activityId/edit" element={<EditActivity />} />
         <Route path="/profile" element={<div>Profile (Coming Soon)</div>} />
         <Route path="/settings" element={<div>Settings (Coming Soon)</div>} />
       </Route>
@@ -63,31 +63,31 @@ const Router = () => {
       <Route element={<ProtectedRoute requiredRoles={['guide', 'master_guide']} />}>
         {/* Activity Management */}
         <Route path="/create-activity" element={<NewActivity />} />
-        <Route path="/edit-activity/:activityId" element={<EditActivity />} />
+        <Route path="/activities/:activityId/edit" element={<EditActivity />} />
         <Route path="/activities/:activityId/dates" element={<ActivityDates />} />
         <Route path="/my-activities" element={<MyActivities />} />
         
         {/* Expedition Management */}
         <Route path="/create-expedition" element={<NewExpedition />} />
-        <Route path="/edit-expedition/:expeditionId" element={<EditExpedition />} />
+        <Route path="/expeditions/:expeditionId/edit" element={<EditExpedition />} />
+        <Route path="/expeditions/:expeditionId/participants" element={<ExpeditionParticipants />} />
         <Route path="/my-expeditions" element={<MyExpeditions />} />
-        <Route path="/teams" element={<TeamManagement />} />
-        
       </Route>
       
       {/* Master Guide routes */}
       <Route element={<ProtectedRoute requiredRoles={['master_guide']} />}>
-        {/* Team Management - Corregido para usar el componente TeamManagement 
-            tanto para la ruta general como para un equipo específico */}
         <Route path="/team-management" element={<TeamManagement />} />
         <Route path="/team-management/:teamId" element={<TeamManagement />} />
+        <Route path="/team-dashboard" element={<TeamDashboard />} />
+        <Route path="/team-dashboard/:teamId" element={<TeamDashboard />} />
         
-        {/* Páginas adicionales de gestión de equipos */}
+        {/* Team-related specific routes */}
+        <Route path="/team-management/:teamId/invitations" element={<TeamInvitationsTab />} />
+        <Route path="/team-management/:teamId/members" element={<TeamMembersTab />} />
+        <Route path="/team-management/:teamId/activities" element={<TeamActivitiesTab />} />
+        <Route path="/team-management/:teamId/expeditions" element={<TeamExpeditionsTab />} />
         
-        
-        <Route path="/team-management/:teamId/invitations" element={<TeamInvitations />} />
-        
-        {/* Otras rutas para Master Guide */}
+        {/* Admin-like routes for Master Guide */}
         <Route path="/earnings" element={<div>Earnings (Coming Soon)</div>} />
         <Route path="/team-reports" element={<div>Team Reports (Coming Soon)</div>} />
       </Route>
