@@ -10,6 +10,7 @@ import TeamExpeditionsTab from '../components/team/TeamExpeditionsTab';
 import TeamOverview from '../components/team/TeamOverview';
 import TeamHeader from '../components/team/TeamHeader';
 import api from '../api';
+import '../styles/TeamManagement.css';
 
 const TeamManagement = () => {
   const { teamId } = useParams();
