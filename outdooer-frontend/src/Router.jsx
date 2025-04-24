@@ -82,7 +82,7 @@ const Router = () => {
         <Route path="/team-dashboard/:teamId" element={<TeamDashboard />} />
         
         {/* Team-related specific routes */}
-        <Route path="/team-management/:teamId/invitations" element={<TeamInvitationsTab />} />
+        <Route path="/team-management/:teamId" element={<TeamInvitationsTab />} />
         <Route path="/team-management/:teamId/members" element={<TeamMembersTab />} />
         <Route path="/team-management/:teamId/activities" element={<TeamActivitiesTab />} />
         <Route path="/team-management/:teamId/expeditions" element={<TeamExpeditionsTab />} />

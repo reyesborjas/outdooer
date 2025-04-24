@@ -427,6 +427,89 @@ CREATE TABLE IF NOT EXISTS public.invitation_usages
     CONSTRAINT invitation_usages_pkey PRIMARY KEY (usage_id)
 );
 
+CREATE TABLE team_invitations (
+    team_invitations_id SERIAL PRIMARY KEY,
+    team_id INTEGER NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending', -- pending, accepted, declined
+    invitation_code VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    invited_by_user_id INTEGER,
+
+    CONSTRAINT fk_team 
+        FOREIGN KEY(team_id) 
+        REFERENCES teams(team_id) 
+        ON DELETE CASCADE,
+    
+    CONSTRAINT fk_invited_by 
+        FOREIGN KEY(invited_by_user_id) 
+        REFERENCES users(user_id)
+        ON DELETE SET NULL,
+    
+    CONSTRAINT unique_team_email 
+        UNIQUE(team_id, email)
+);
+
+-- Index for performance
+CREATE INDEX idx_team_invitations_team_id ON team_invitations(team_id);
+CREATE INDEX idx_team_invitations_email ON team_invitations(email);
+CREATE INDEX idx_team_invitations_status ON team_invitations(status);
+
+-- Function to generate unique invitation code
+CREATE OR REPLACE FUNCTION generate_invitation_code() 
+RETURNS TEXT AS $$
+DECLARE
+    invitation_code TEXT;
+BEGIN
+    LOOP
+        -- Generate a random code (adjust length and complexity as needed)
+        invitation_code := LOWER(
+            REGEXP_REPLACE(
+                gen_salt('md5'), 
+                '[^a-z0-9]', 
+                '', 
+                'g'
+            )
+        );
+        
+        -- Truncate to desired length
+        invitation_code := SUBSTRING(invitation_code FROM 1 FOR 20);
+        
+        -- Check if code is unique
+        EXIT WHEN NOT EXISTS (
+            SELECT 1 FROM team_invitations 
+            WHERE invitation_code = invitation_code
+        );
+    END LOOP;
+    
+    RETURN invitation_code;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to auto-generate invitation code and set expiration
+CREATE OR REPLACE FUNCTION set_invitation_defaults()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Generate unique invitation code if not provided
+    IF NEW.invitation_code IS NULL THEN
+        NEW.invitation_code := generate_invitation_code();
+    END IF;
+    
+    -- Set default expiration to 7 days from creation if not set
+    IF NEW.expires_at IS NULL THEN
+        NEW.expires_at := NEW.created_at + INTERVAL '7 days';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER set_invitation_defaults_trigger
+BEFORE INSERT ON team_invitations
+FOR EACH ROW
+EXECUTE FUNCTION set_invitation_defaults();
+
 CREATE TABLE IF NOT EXISTS public.location_aliases
 (
     alias_id serial NOT NULL,

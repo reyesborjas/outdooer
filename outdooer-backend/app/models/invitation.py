@@ -16,6 +16,7 @@ class InvitationCode(db.Model):
     expires_at = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    metadata_ = db.Column('metadata',db.JSON, nullable=True)  # Optional metadata field
     
     # Define relationships without using backref to avoid conflicts
     team = db.relationship('Team', foreign_keys=[team_id])

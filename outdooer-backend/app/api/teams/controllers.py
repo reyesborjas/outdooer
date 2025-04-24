@@ -499,7 +499,7 @@ def generate_invitation_code(team_id):
         )
         
         # Add additional data for guide role level
-        invitation.metadata = {'role_level': role_level}
+        invitation.metadata_ = {'role_level': role_level}
         
         db.session.add(invitation)
         db.session.commit()
@@ -553,7 +553,7 @@ def get_team_invitations(team_id):
         # Format response
         invitations_list = []
         for invitation in invitations:
-            role_level = invitation.metadata.get('role_level', 4) if hasattr(invitation, 'metadata') and invitation.metadata else 4
+            role_level = invitation.metadata_.get('role_level', 4) if hasattr(invitation, 'metadata') and invitation.metadata_ else 4
             role_name = getattr(role_config, f'level_{role_level}_name', f'Level {role_level}') if role_config else f'Level {role_level}'
             
             creator = User.query.get(invitation.created_by)
