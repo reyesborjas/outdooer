@@ -18,6 +18,18 @@ import NewExpedition from './pages/NewExpedition';
 import EditExpedition from './pages/EditExpedition';
 import MyExpeditions from './pages/MyExpeditions';
 
+// New components for team management
+import TeamManagement from './pages/TeamManagement';
+// Importamos los componentes que faltaban
+
+
+import TeamInvitationsTab from '../components/team/TeamInvitationsTab';
+import TeamExpeditionsTab from '../components/team/TeamExpeditionsTab';
+import TeamActivitiesTab from '../components/team/TeamActivitiesTab';
+import TeamMembersTab from '../components/team/TeamMembersTab';
+import TeamManagement from './pages/TeamManagement';
+
+
 const Router = () => {
   return (
     <Routes>
@@ -59,12 +71,23 @@ const Router = () => {
         <Route path="/create-expedition" element={<NewExpedition />} />
         <Route path="/edit-expedition/:expeditionId" element={<EditExpedition />} />
         <Route path="/my-expeditions" element={<MyExpeditions />} />
-        <Route path="/expedition-participants/:expeditionId" element={<div>Expedition Participants (Coming Soon)</div>} />
+        <Route path="/teams" element={<TeamManagement />} />
+        
       </Route>
       
       {/* Master Guide routes */}
       <Route element={<ProtectedRoute requiredRoles={['master_guide']} />}>
-        <Route path="/team-management" element={<div>Team Management (Coming Soon)</div>} />
+        {/* Team Management - Corregido para usar el componente TeamManagement 
+            tanto para la ruta general como para un equipo específico */}
+        <Route path="/team-management" element={<TeamManagement />} />
+        <Route path="/team-management/:teamId" element={<TeamManagement />} />
+        
+        {/* Páginas adicionales de gestión de equipos */}
+        
+        
+        <Route path="/team-management/:teamId/invitations" element={<TeamInvitations />} />
+        
+        {/* Otras rutas para Master Guide */}
         <Route path="/earnings" element={<div>Earnings (Coming Soon)</div>} />
         <Route path="/team-reports" element={<div>Team Reports (Coming Soon)</div>} />
       </Route>
