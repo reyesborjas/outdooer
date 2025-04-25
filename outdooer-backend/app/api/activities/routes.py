@@ -27,7 +27,7 @@ def get_activities_by_team(team_id):
         current_user_id = get_jwt_identity()
         
         # Find user's role in this team
-        from app.models.team import TeamMember
+        from app.models.team_member import TeamMember
         membership = TeamMember.query.filter_by(
             user_id=current_user_id,
             team_id=team_id

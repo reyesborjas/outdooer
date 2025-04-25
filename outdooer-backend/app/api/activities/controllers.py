@@ -6,7 +6,8 @@ from app import db
 from app.models.activity import Activity
 from app.models.location import Location
 from app.models.activity_type import ActivityType
-from app.models.team import Team, TeamMember
+from app.models.team import Team
+from app.models.team_member import TeamMember
 from flask_jwt_extended import get_jwt_identity
 
 def get_all_activities():

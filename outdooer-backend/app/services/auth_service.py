@@ -1,7 +1,9 @@
 # app/services/auth_service.py
 from app import db
 from app.models.user import User, UserRole
-from app.models.team import Team, TeamMember, TeamRoleConfiguration
+from app.models.team import Team
+from app.models.team_member import TeamMember
+from app.models.team_role_configuration import TeamRoleConfiguration
 from app.models.invitation import InvitationCode, InvitationUsage
 from app.utils.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, create_refresh_token

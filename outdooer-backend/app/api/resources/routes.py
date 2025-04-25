@@ -3,7 +3,8 @@ from flask import jsonify, request
 from . import resources_bp
 from app import db
 from app.models.resource import Resource, ResourceCategory, ActivityResource
-from app.models.team import Team, TeamMember
+from app.models.team import Team
+from app.models.team_member import TeamMember
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 # Rutas para categorías de recursos

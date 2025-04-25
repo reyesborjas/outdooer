@@ -1,7 +1,9 @@
 # app/api/teams/controllers.py
 from flask import jsonify, request
 from app import db
-from app.models.team import Team, TeamMember, TeamRoleConfiguration
+from app.models.team import Team
+from app.models.team_member import TeamMember
+from app.models.team_role_configuration import TeamRoleConfiguration
 from app.models.user import User, UserRole
 from app.models.invitation import InvitationCode
 from flask_jwt_extended import get_jwt_identity

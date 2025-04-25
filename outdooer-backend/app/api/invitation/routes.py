@@ -4,7 +4,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import invitations_bp
 from app.models.invitation import InvitationCode, InvitationUsage
 from app.models.user import User, UserRole
-from app.models.team import Team, TeamMember
+from app.models.team import Team
+from app.models.team_member import TeamMember
 from app import db
 from datetime import datetime
 from app.utils.generate_invitation import generate_code

@@ -29,7 +29,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from flask import Flask
 from app import create_app, db
 from app.models.user import User, UserRole
-from app.models.team import Team, TeamMember, TeamRoleConfiguration
+from app.models.team import Team
+from app.models.team_member import TeamMember
+from app.models.team_role_configuration import TeamRoleConfiguration
 from app.models.location import Location
 from app.utils.security import generate_password_hash
 

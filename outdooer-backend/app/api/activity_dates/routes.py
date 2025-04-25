@@ -3,7 +3,7 @@ from flask import jsonify, request
 from app import db
 from app.models.activity import Activity
 from app.models.activity_date import GuideActivityInstance, ActivityAvailableDate
-from app.models.team import TeamMember
+from app.models.team_member import TeamMember
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, date, time
 from . import activity_dates_bp

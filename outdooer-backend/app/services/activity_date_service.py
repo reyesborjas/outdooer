@@ -3,7 +3,7 @@ from app import db
 from datetime import datetime, date, time
 from app.models.activity import Activity
 from app.models.activity_date import GuideActivityInstance, ActivityAvailableDate
-from app.models.team import TeamMember
+from app.models.team_member import TeamMember
 
 class ActivityDateService:
     """Service for activity date related operations"""

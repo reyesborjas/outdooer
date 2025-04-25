@@ -5,7 +5,7 @@ from app.services.permission_service import PermissionService
 from app.models.team_role_configuration import TeamRoleConfiguration
 from app.models.expedition import Expedition
 from app.models.activity import Activity
-from app.models.team import TeamMember
+from app.models.team_member import TeamMember
 from app.database import db
 
 # Import the blueprint from __init__.py

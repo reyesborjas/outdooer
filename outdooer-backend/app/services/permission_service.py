@@ -1,5 +1,5 @@
 # app/services/permission_service.py
-from app.models.team import TeamMember
+from app.models.team_member import TeamMember
 from app.models.team_role_configuration import TeamRoleConfiguration
 
 class PermissionService:

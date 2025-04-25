@@ -3,7 +3,8 @@ from app import db
 from app.models.activity import Activity, find_similar_activities
 from app.models.location import Location
 from app.models.activity_type import ActivityType
-from app.models.team import Team, TeamMember
+from app.models.team import Team
+from app.models.team_member import TeamMember
 from datetime import datetime
 
 class ActivityService:

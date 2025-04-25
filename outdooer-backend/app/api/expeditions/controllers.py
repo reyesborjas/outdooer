@@ -3,7 +3,7 @@
 from flask import jsonify, request
 from app.database import db
 from app.models.expedition import Expedition, ExpeditionActivity
-from app.models.team import TeamMember
+from app.models.team_member import TeamMember
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 

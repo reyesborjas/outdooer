@@ -14,9 +14,9 @@ def create_app(config_name='default'):
     config[config_name].init_app(app)
     
     # Initialize extensions
-    CORS(app, supports_credentials=True)
+    
     db.init_app(app)
-    jwt = JWTManager(app)
+    
     
     # Register blueprints
     with app.app_context():
@@ -31,6 +31,9 @@ def create_app(config_name='default'):
         from app.api.activity_dates import activity_dates_bp
         from app.api.resources import resources_bp
         from app.api.permissions import permissions_bp
+        from app.models.user import User, UserRole
+        from app.models.team import Team
+        from app.models.team_role_configuration import TeamRoleConfiguration
         
         app.register_blueprint(auth_bp, url_prefix='/api/auth')
         app.register_blueprint(activities_bp, url_prefix='/api/activities')

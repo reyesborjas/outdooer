@@ -5,7 +5,8 @@ from datetime import datetime
 from app import db  # Now properly imported from app/__init__.py
 from app.utils.security import check_password_hash
 from app.models.user import User, UserRole
-from app.models.team import Team, TeamMember
+from app.models.team import Team
+from app.models.team_member import TeamMember
 from app.services.auth_service import AuthService
 from . import auth_bp
 

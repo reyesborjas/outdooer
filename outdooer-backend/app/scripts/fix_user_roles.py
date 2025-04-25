@@ -25,7 +25,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from flask import Flask
 from app import create_app, db
 from app.models.user import User, UserRole
-from app.models.team import Team, TeamMember
+from app.models.team import Team
+from app.models.team_member import TeamMember
 
 def fix_user_roles(dry_run=False):
     """Fix inconsistencies in user roles"""

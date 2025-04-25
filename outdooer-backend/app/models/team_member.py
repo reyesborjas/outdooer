@@ -18,9 +18,6 @@ class TeamMember(db.Model):
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Define relationships
-    user = db.relationship('User', backref='team_memberships')
-    team = db.relationship('Team', backref='members')
-    
-    def __repr__(self):
-        return f'<TeamMember {self.user_id} in {self.team_id}>'
+    # Define proper relationships
+    user = db.relationship('User', back_populates='team_memberships')
+    team = db.relationship('Team', back_populates='members')
