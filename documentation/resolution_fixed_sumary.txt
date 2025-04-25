@@ -1,0 +1,62 @@
+# Outdooer Backend Import Resolution Fixes
+
+## Root Cause of the Issue
+The main error was in how the application factory (`create_app` function) was being invoked in `run.py`. The original code tried to use a string 'default' directly as a configuration object, but Flask's `from_object` method was trying to import it as a module, causing the error:
+
+```
+werkzeug.utils.ImportStringError: import_string() failed for 'default'
+```
+
+## Key Fixes Applied
+
+1. **Fixed `run.py`**:
+   - Updated to pass a configuration name that exists in the `config` dictionary
+   - Added environment variable support with fallback to 'development'
+
+2. **Fixed `app/app.py`**:
+   - Corrected how it accesses the configuration dictionary
+   - Ensured blueprints are properly registered
+
+3. **Fixed Module Imports**:
+   - Updated all imports to use absolute imports with `app.` prefix
+   - Fixed circular import issues
+
+4. **Fixed Permission-Related Files**:
+   - Corrected `app/models/team_role_configuration.py` to use proper database import
+   - Updated `app/middleware/permissions.py` to use correct model imports
+   - Fixed `app/services/permission_service.py`
+
+5. **Updated Blueprint Initialization Files**:
+   - Ensured all `__init__.py` files are correctly set up for package discovery
+   - Fixed blueprint imports in the routes files
+
+6. **Corrected Expedition Routes and Controllers**:
+   - Updated to use the correct middleware
+   - Fixed imports that were causing issues
+
+## Structure Improvements
+
+- Better initialization sequence that avoids circular imports
+- Proper use of package imports with `__init__.py` files
+- Consistent import style throughout the codebase
+- Clean file organization following Flask application factory pattern
+
+## Test Instructions
+
+1. Run the application:
+   ```bash
+   python run.py
+   ```
+
+2. The application should start without import errors
+3. Access the API health check endpoint to verify it's running:
+   ```
+   http://localhost:5000/api/health
+   ```
+
+## Going Forward
+
+- Always use absolute imports starting with `app.`
+- Maintain proper `__init__.py` files in all directories
+- When adding new modules, follow the existing import patterns
+- Use the application factory pattern consistently

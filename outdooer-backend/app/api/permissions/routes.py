@@ -1,15 +1,14 @@
 # app/api/permissions/routes.py
-from flask import Blueprint, request, jsonify
+from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.permission_service import PermissionService
 from app.models.team_role_configuration import TeamRoleConfiguration
 from app.models.expedition import Expedition
 from app.models.activity import Activity
-from app.models.team_member import TeamMember
+from app.models.team import TeamMember
 from app.database import db
 
-# We're already importing the blueprint from __init__.py
-# so we don't need to create it again
+# Import the blueprint from __init__.py
 from app.api.permissions import permissions_bp
 
 @permissions_bp.route('/check', methods=['POST'])
@@ -70,7 +69,6 @@ def check_permission():
     except Exception as e:
         return jsonify({'error': str(e), 'has_permission': False}), 500
 
-
 @permissions_bp.route('/user', methods=['GET'])
 @jwt_required()
 def get_user_permissions():
@@ -111,7 +109,6 @@ def get_user_permissions():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
 @permissions_bp.route('/role-configurations', methods=['GET'])
 @jwt_required()
 def get_role_configurations():
@@ -139,7 +136,6 @@ def get_role_configurations():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @permissions_bp.route('/sync-permissions', methods=['POST'])
 @jwt_required()

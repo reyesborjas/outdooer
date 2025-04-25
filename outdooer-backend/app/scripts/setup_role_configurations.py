@@ -62,10 +62,3 @@ def setup_role_configurations():
     
     db.session.commit()
     print(f"Added {len(configurations)} role configurations to the database.")
-
-# Run this script during app initialization or as a separate setup script
-if __name__ == "__main__":
-    from app import app
-    with app.app_context():
-        setup_role_configurations()
-        print("Role configurations set up successfully.")

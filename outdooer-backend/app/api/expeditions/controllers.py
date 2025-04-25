@@ -1,16 +1,12 @@
 # app/api/expeditions/controllers.py
 
 from flask import jsonify, request
-from app import db
+from app.database import db
 from app.models.expedition import Expedition, ExpeditionActivity
 from app.models.team import TeamMember
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
-from app.models.team_role_configuration import TeamRoleConfiguration
-from flask import request, jsonify
-from flask_jwt_extended import get_jwt_identity
-from models.expedition import Expedition
-from app.database import db
+
 # =======================
 # Helpers
 # =======================
@@ -19,11 +15,6 @@ def get_user_role_level(user_id, team_id):
     """Return the role level of a user within a team."""
     member = TeamMember.query.filter_by(user_id=user_id, team_id=team_id).first()
     return member.role_level if member else None
-
-def role_allows_operation(role_level, operation):
-    """Check if a role level is permitted to perform an operation."""
-    config = TeamRoleConfiguration.query.filter_by(role_level=role_level, operation=operation).first()
-    return config.is_permitted if config else False
 
 # =======================
 # Expedition Endpoints
@@ -72,13 +63,6 @@ def create_expedition():
         if 'leader_id' not in data:
             data['leader_id'] = data['created_by']
 
-        if 'team_id' in data and data['team_id']:
-            role_level = get_user_role_level(current_user_id, data['team_id'])
-            if role_level is None:
-                return jsonify({'error': 'You are not a member of this team'}), 403
-            if role_level > 2:
-                return jsonify({'error': 'Only Master and Tactical Guides can create expeditions'}), 403
-
         expedition = Expedition(
             team_id=data.get('team_id'),
             title=data['title'],
@@ -111,24 +95,20 @@ def update_expedition(expedition_id):
     try:
         expedition = Expedition.query.get_or_404(expedition_id)
         data = request.get_json()
-        current_user_id = get_jwt_identity()
-
-        role_level = get_user_role_level(current_user_id, expedition.team_id)
-        if role_level is None:
-            return jsonify({'error': 'You are not a member of this team'}), 403
-
-        if role_level > 2:
-            if role_level == 3 and (expedition.created_by == current_user_id or expedition.leader_id == current_user_id):
-                pass
-            else:
-                return jsonify({'error': 'Insufficient permissions to update expedition'}), 403
 
         for key, value in data.items():
             if hasattr(expedition, key):
+                if key in ['start_date', 'end_date'] and value:
+                    value = datetime.fromisoformat(value)
                 setattr(expedition, key, value)
 
+        expedition.updated_at = datetime.utcnow()
         db.session.commit()
-        return jsonify(expedition.to_dict()), 200
+        
+        return jsonify({
+            'message': 'Expedition updated successfully',
+            'expedition': expedition.to_dict()
+        }), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -136,17 +116,10 @@ def update_expedition(expedition_id):
 def delete_expedition(expedition_id):
     try:
         expedition = Expedition.query.get_or_404(expedition_id)
-        current_user_id = get_jwt_identity()
-        role_level = get_user_role_level(current_user_id, expedition.team_id)
-
-        if role_level is None:
-            return jsonify({'error': 'You are not a member of this team'}), 403
-
-        if role_level != 1:
-            return jsonify({'error': 'Only Master Guides can delete expeditions'}), 403
 
         db.session.delete(expedition)
         db.session.commit()
+        
         return jsonify({'message': 'Expedition deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
@@ -170,14 +143,7 @@ def add_expedition_activities(expedition_id):
         expedition = Expedition.query.get_or_404(expedition_id)
         current_user_id = get_jwt_identity()
 
-        if expedition.created_by != current_user_id and expedition.leader_id != current_user_id:
-            if expedition.team_id:
-                member = TeamMember.query.filter_by(team_id=expedition.team_id, user_id=current_user_id).first()
-                if not member or member.role_level > 2:
-                    return jsonify({'error': 'Unauthorized to update expedition activities'}), 403
-            else:
-                return jsonify({'error': 'Unauthorized to update expedition activities'}), 403
-
+        # Clear existing activities first
         ExpeditionActivity.query.filter_by(expedition_id=expedition_id).delete()
 
         new_activities = []
