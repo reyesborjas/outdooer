@@ -1,68 +1,25 @@
-# models/team_member.py
+# app/models/team_member.py
 from app.database import db
+from datetime import datetime
 
 class TeamMember(db.Model):
     __tablename__ = 'team_members'
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'), nullable=False)
-    role_level = db.Column(db.Integer, nullable=False)  # 1=Master, 2=Tactical, 3=Technical, 4=Base
-    join_date = db.Column(db.DateTime, server_default=db.func.now())
+    # Add extend_existing to handle potential duplicate definitions
+    __table_args__ = (
+        db.UniqueConstraint('team_id', 'user_id'),
+        {'extend_existing': True}
+    )
     
-    # Relationships
-    user = db.relationship('User', back_populates='team_memberships')
-    team = db.relationship('Team', back_populates='members')
+    team_member_id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    role_level = db.Column(db.Integer, nullable=False)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'team_id': self.team_id,
-            'role_level': self.role_level,
-            'join_date': self.join_date.isoformat() if self.join_date else None
-        }
-
-# models/team_role_configuration.py
-from app.database import db
-
-class TeamRoleConfiguration(db.Model):
-    __tablename__ = 'team_role_configurations'
+    # Define relationships with direct references
+    # Don't include backref/back_populates here as they're on the other models
     
-    id = db.Column(db.Integer, primary_key=True)
-    role_level = db.Column(db.Integer, nullable=False)  # 1=Master, 2=Tactical, 3=Technical, 4=Base
-    operation = db.Column(db.String(50), nullable=False)  # e.g., 'create_expedition', 'delete_activity'
-    is_permitted = db.Column(db.Boolean, default=False)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'role_level': self.role_level,
-            'operation': self.operation,
-            'is_permitted': self.is_permitted
-        }
-
-# models/team.py
-from app.database import db
-
-class Team(db.Model):
-    __tablename__ = 'teams'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    master_guide_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    
-    # Relationships
-    members = db.relationship('TeamMember', back_populates='team')
-    expeditions = db.relationship('Expedition', back_populates='team')
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'master_guide_id': self.master_guide_id
-        }
+    def __repr__(self):
+        return f'<TeamMember {self.user_id} in {self.team_id}>'

@@ -107,3 +107,62 @@ The frontend would need components to support all the fields and relationships p
    - UI for selecting appropriate leaders based on team role levels
 
 The most critical gaps that should be addressed first are the activity date management implementation and the proper integration of resource management, as these directly impact the basic CRUD functionality. The frontend components should be developed in parallel to ensure a cohesive user experience.
+# Additional Model Import Fixes
+
+## Root Cause of the New Error
+
+The new error was related to duplicate table definitions in SQLAlchemy:
+
+```
+sqlalchemy.exc.InvalidRequestError: Table 'team_role_configurations' is already defined for this MetaData instance.
+```
+
+This happens when the same database model is defined multiple times or imported through different paths during application startup.
+
+## Key Fixes Applied
+
+1. **Simplified models/__init__.py**:
+   - Removed all model imports to prevent circular dependencies
+   - Now models are imported directly where needed
+
+2. **Added `extend_existing=True` to models**:
+   - Updated `TeamRoleConfiguration`, `TeamMember`, and `Team` models
+   - This tells SQLAlchemy to extend an existing table definition rather than raising an error
+
+3. **Fixed app factory design pattern**:
+   - Simplified `app/__init__.py` to just re-export the `create_app` function
+   - Moved blueprint registrations inside the app context to avoid circular imports
+   - Improved the `create_app` function to handle model registration more robustly
+
+4. **Improved the app startup process**:
+   - Fixed the configuration loading process
+   - Made database initialization more robust
+   - Added proper checks before initializing role configurations
+
+## Structure Improvements
+
+- Better model organization to prevent duplicate registrations
+- More robust blueprint registration process
+- Cleaner application factory pattern implementation
+- More defensive code to handle potential import and database errors
+
+## Test Instructions
+
+1. Run the application:
+   ```bash
+   python run.py
+   ```
+
+2. The application should start without any database model errors
+3. Access the API health check endpoint to verify it's running:
+   ```
+   http://localhost:5000/api/health
+   ```
+
+## Going Forward
+
+- Be careful when importing models in `__init__.py` files
+- Add `extend_existing=True` to models that might be imported multiple times
+- Keep blueprint registrations inside the app factory function
+- Import blueprints within the app context to avoid circular imports
+- Use direct model imports where needed rather than trying to import everything through a models package

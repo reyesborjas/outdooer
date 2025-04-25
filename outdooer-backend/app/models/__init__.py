@@ -1,9 +1,9 @@
-# app/models/__init__.py
+"""# app/models/__init__.py
 
-"""
+
 Este archivo garantiza el orden correcto de importación de los modelos
 para evitar problemas de dependencias circulares en SQLAlchemy y Marshmallow.
-"""
+
 
 # 1. First, import the most basic models with no dependencies
 from app.models.location import Location
@@ -34,4 +34,4 @@ from app.models.expedition import Expedition, ExpeditionActivity, ExpeditionLoca
 from app.models.team_member import TeamMember
 from app.models.team_role_configuration import TeamRoleConfiguration
 from app.models.expedition import Expedition
-from app.models.activity import Activity
+from app.models.activity import Activity """
