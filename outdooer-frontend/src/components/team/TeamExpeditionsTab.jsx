@@ -17,7 +17,7 @@ const TeamExpeditionsTab = ({ teamId }) => {
         setLoading(true);
         setError(null);
 
-        const response = await api.get(`/api/expeditions/team/${teamId}`);
+        const response = await api.get(`/expeditions/team/${teamId}`);
         setExpeditions(response.data.expeditions || []);
       } catch (err) {
         console.error('Error fetching team expeditions:', err);

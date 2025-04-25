@@ -6,7 +6,7 @@ import {
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { FaEdit, FaEye, FaTrashAlt, FaUsers } from 'react-icons/fa';
+import { FaEdit, FaEye, FaTrashAlt, FaUsers, FaEllipsisV } from 'react-icons/fa';
 import api from '../api';
 import '../styles/MyExpeditions.css';
 
@@ -127,14 +127,137 @@ const MyExpeditions = () => {
     setExpandedExpedition(prev => (prev === expeditionId ? null : expeditionId));
   };
 
-  // Aquí podrías continuar con el renderizado usando el código corregido
-  // anterior o moviendo funciones auxiliares a componentes separados.
+  // Define the missing renderExpeditionCard function
+  const renderExpeditionCard = (expedition, canDelete) => {
+    const isExpanded = expandedExpedition === expedition.expedition_id;
+    
+    return (
+      <Card key={expedition.expedition_id} className="mb-3 expedition-card">
+        <Card.Header className="d-flex justify-content-between align-items-center">
+          <h5 className="mb-0">{expedition.title}</h5>
+          <div className="d-flex align-items-center">
+            <Badge bg={getStatusBadgeVariant(expedition.expedition_status)} className="me-2">
+              {expedition.expedition_status}
+            </Badge>
+            <Dropdown>
+              <Dropdown.Toggle variant="light" size="sm" id={`expedition-${expedition.expedition_id}-actions`}>
+                <FaEllipsisV />
+              </Dropdown.Toggle>
+              <Dropdown.Menu align="end">
+                <Dropdown.Item onClick={() => navigate(`/expeditions/${expedition.expedition_id}`)}>
+                  <FaEye className="me-2" /> View Details
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => navigate(`/edit-expedition/${expedition.expedition_id}`)}>
+                  <FaEdit className="me-2" /> Edit Expedition
+                </Dropdown.Item>
+                <Dropdown.Item onClick={() => navigate(`/expeditions/${expedition.expedition_id}/participants`)}>
+                  <FaUsers className="me-2" /> Manage Participants
+                </Dropdown.Item>
+                {canDelete && (
+                  <Dropdown.Item className="text-danger" onClick={() => confirmDeleteExpedition(expedition)}>
+                    <FaTrashAlt className="me-2" /> Delete Expedition
+                  </Dropdown.Item>
+                )}
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          <Row>
+            <Col md={9}>
+              <div className="expedition-description mb-3">
+                {expedition.description?.length > 150 && !isExpanded
+                  ? `${expedition.description.slice(0, 150)}...`
+                  : expedition.description}
+                {expedition.description?.length > 150 && (
+                  <Button
+                    variant="link"
+                    className="p-0 ms-1"
+                    onClick={() => toggleExpeditionDetails(expedition.expedition_id)}
+                  >
+                    {isExpanded ? 'Show less' : 'Show more'}
+                  </Button>
+                )}
+              </div>
+            </Col>
+            <Col md={3}>
+              <Card className="stat-card">
+                <Card.Body className="text-center">
+                  <div className="price mb-1">{formatPrice(expedition.price)}</div>
+                  <small className="text-muted">per person</small>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+          
+          <Row className="expedition-details g-2">
+            <Col sm={6} md={3}>
+              <div className="detail-label">Start Date</div>
+              <div className="detail-value">{formatDate(expedition.start_date)}</div>
+            </Col>
+            <Col sm={6} md={3}>
+              <div className="detail-label">End Date</div>
+              <div className="detail-value">{formatDate(expedition.end_date)}</div>
+            </Col>
+            <Col sm={6} md={3}>
+              <div className="detail-label">Duration</div>
+              <div className="detail-value">{calculateDuration(expedition.start_date, expedition.end_date)}</div>
+            </Col>
+            <Col sm={6} md={3}>
+              <div className="detail-label">Capacity</div>
+              <div className="detail-value">{expedition.min_participants} - {expedition.max_participants} people</div>
+            </Col>
+          </Row>
+          
+          <div className="d-flex justify-content-between mt-3">
+            <Button 
+              variant="outline-primary" 
+              size="sm"
+              onClick={() => navigate(`/expeditions/${expedition.expedition_id}`)}
+            >
+              <FaEye className="me-1" /> View Details
+            </Button>
+            <div>
+              <Button 
+                variant="outline-secondary" 
+                size="sm" 
+                className="me-2"
+                onClick={() => navigate(`/edit-expedition/${expedition.expedition_id}`)}
+              >
+                <FaEdit className="me-1" /> Edit
+              </Button>
+              {canDelete && (
+                <Button 
+                  variant="outline-danger" 
+                  size="sm"
+                  onClick={() => confirmDeleteExpedition(expedition)}
+                >
+                  <FaTrashAlt className="me-1" /> Delete
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card.Body>
+      </Card>
+    );
+  };
 
   return (
-    <Container className="my-expeditions-page">
+    <Container className="my-expeditions-page py-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>My Expeditions</h1>
+        <Button 
+          variant="primary" 
+          onClick={() => navigate('/create-expedition')}
+        >
+          Create New Expedition
+        </Button>
+      </div>
+      
       {loading ? (
         <div className="text-center my-5">
           <Spinner animation="border" variant="primary" />
+          <p className="mt-3">Loading your expeditions...</p>
         </div>
       ) : error ? (
         <Alert variant="danger">{error}</Alert>
@@ -146,19 +269,22 @@ const MyExpeditions = () => {
             onSelect={tab => setActiveTab(tab)}
             className="mb-4"
           >
-            <Tab eventKey="created" title="Created Expeditions" />
-            <Tab eventKey="led" title="Led Expeditions" />
+            <Tab eventKey="created" title={`Created Expeditions (${expeditions.created.length})`} />
+            <Tab eventKey="led" title={`Led Expeditions (${expeditions.led.length})`} />
           </Tabs>
-          <Form className="mb-4 d-flex gap-2">
+          
+          <div className="mb-4 d-flex gap-2">
             <Form.Control
               type="text"
               placeholder="Search expeditions"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
+              className="flex-grow-1"
             />
             <Form.Select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
+              style={{ width: 'auto', minWidth: '150px' }}
             >
               <option value="all">All Statuses</option>
               <option value="active">Active</option>
@@ -166,16 +292,43 @@ const MyExpeditions = () => {
               <option value="canceled">Canceled</option>
               <option value="completed">Completed</option>
             </Form.Select>
-          </Form>
+          </div>
+          
           {filteredExpeditions.length === 0 ? (
             <Alert variant="info" className="text-center">
-              No expeditions found matching your criteria.
+              <p className="mb-3">No expeditions found matching your criteria.</p>
+              <Button variant="primary" onClick={() => navigate('/create-expedition')}>
+                Create Your First Expedition
+              </Button>
             </Alert>
           ) : (
             filteredExpeditions.map(expedition =>
               renderExpeditionCard(expedition, activeTab === 'created')
             )
           )}
+          
+          {/* Delete Confirmation Modal */}
+          <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Confirm Deletion</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {expeditionToDelete && (
+                <>
+                  <p>Are you sure you want to delete the expedition <strong>{expeditionToDelete.title}</strong>?</p>
+                  <p className="text-danger">This action cannot be undone.</p>
+                </>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={deleteExpedition}>
+                Delete Expedition
+              </Button>
+            </Modal.Footer>
+          </Modal>
         </>
       )}
     </Container>

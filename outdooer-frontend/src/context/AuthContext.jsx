@@ -1,6 +1,7 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect } from 'react';
 import { authApi } from '../api/auth';
+import { permissionApi } from '../api/permissions'; // New API for checking permissions
 
 export const AuthContext = createContext(null);
 
@@ -9,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [permissionCache, setPermissionCache] = useState({});
 
   // Initialize authentication on app load
   useEffect(() => {
@@ -78,6 +80,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       localStorage.removeItem('token');
+      setPermissionCache({}); // Clear permission cache on logout
     }
   };
 
@@ -101,37 +104,98 @@ export const AuthProvider = ({ children }) => {
   const isTechnicalGuide = () => user?.teams?.some(team => team.role_level === 3);
   const isBaseGuide = () => user?.teams?.some(team => team.role_level === 4);
 
-  // Permission checks
-  const canCreateActivity = () => isGuide();
+  // Permission check helper with backend validation and caching
+  const checkPermission = async (operation, resourceId = null, teamId = null) => {
+    if (isAdmin()) return true; // Admins always have permission
+    
+    if (!user) return false;
+    
+    // Generate cache key
+    const cacheKey = `${operation}_${resourceId || ''}_${teamId || ''}`;
+    
+    // Check cache first
+    if (permissionCache[cacheKey] !== undefined) {
+      return permissionCache[cacheKey];
+    }
+    
+    try {
+      // Call backend permission service
+      const response = await permissionApi.checkPermission({
+        operation,
+        resource_id: resourceId,
+        team_id: teamId
+      });
+      
+      // Update cache
+      setPermissionCache(prev => ({
+        ...prev,
+        [cacheKey]: response.has_permission
+      }));
+      
+      return response.has_permission;
+    } catch (err) {
+      console.error('Permission check error:', err);
+      return false;
+    }
+  };
 
-  const canEditActivity = (activity) => {
-    if (!user || !activity) return false;
+  // Permission checks - these now check with the backend
+  const canCreateActivity = async (teamId) => {
+    return checkPermission('create_activity', null, teamId);
+  };
+
+  const canEditActivity = async (activity) => {
+    if (!activity) return false;
+    return checkPermission('update_activity', activity.id, activity.team_id);
+  };
+
+  const canDeleteActivity = async (activity) => {
+    if (!activity) return false;
+    return checkPermission('delete_activity', activity.id, activity.team_id);
+  };
+
+  const canCreateExpedition = async (teamId) => {
+    return checkPermission('create_expedition', null, teamId);
+  };
+
+  const canEditExpedition = async (expedition) => {
+    if (!expedition) return false;
+    return checkPermission('update_expedition', expedition.id, expedition.team_id);
+  };
+
+  const canDeleteExpedition = async (expedition) => {
+    if (!expedition) return false;
+    return checkPermission('delete_expedition', expedition.id, expedition.team_id);
+  };
+
+  // Synchronous permission checks for UI rendering (based on role level only)
+  // These are less accurate but don't require async operations
+  const canCreateExpeditionSync = (teamId) => {
     if (isAdmin()) return true;
+    const roleLevel = getRoleLevelInTeam(teamId);
+    return roleLevel !== null && roleLevel <= 2; // Only Master and Tactical Guides
+  };
 
-    const roleLevel = getRoleLevelInTeam(activity.team_id);
+  const canEditExpeditionSync = (expedition) => {
+    if (!expedition) return false;
+    if (isAdmin()) return true;
+    
+    const roleLevel = getRoleLevelInTeam(expedition.team_id);
     if (!roleLevel) return false;
-
-    if (roleLevel <= 2) return true;
-    if (roleLevel === 3) {
-      return activity.created_by === user.user_id || activity.leader_id === user.user_id;
+    
+    if (roleLevel <= 2) return true; // Master and Tactical Guides
+    if (roleLevel === 3) { // Technical Guide
+      return expedition.created_by === user.user_id || expedition.leader_id === user.user_id;
     }
-    if (roleLevel === 4) {
-      return activity.created_by === user.user_id;
-    }
-    return false;
+    return false; // Base Guides cannot edit
   };
 
-  const canDeleteActivity = (activity) => {
-    if (!user || !activity) return false;
+  const canDeleteExpeditionSync = (expedition) => {
+    if (!expedition) return false;
     if (isAdmin()) return true;
-
-    const roleLevel = getRoleLevelInTeam(activity.team_id);
-    return roleLevel === 1;
-  };
-
-  const canCreateExpedition = () => {
-    if (!user?.teams) return false;
-    return user.teams.some(team => team.role_level <= 2);
+    
+    const roleLevel = getRoleLevelInTeam(expedition.team_id);
+    return roleLevel === 1; // Only Master Guides
   };
 
   return (
@@ -155,10 +219,17 @@ export const AuthProvider = ({ children }) => {
         isTechnicalGuide,
         isBaseGuide,
         getRoleLevelInTeam,
+        // Async permission checks (accurate, backend validated)
         canCreateActivity,
         canEditActivity,
         canDeleteActivity,
         canCreateExpedition,
+        canEditExpedition,
+        canDeleteExpedition,
+        // Sync permission checks (for UI rendering)
+        canCreateExpeditionSync,
+        canEditExpeditionSync,
+        canDeleteExpeditionSync,
       }}
     >
       {children}

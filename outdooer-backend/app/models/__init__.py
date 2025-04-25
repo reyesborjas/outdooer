@@ -29,3 +29,9 @@ from app.models.activity_date import GuideActivityInstance, ActivityAvailableDat
 
 # 7. Import higher-level models with many dependencies
 from app.models.expedition import Expedition, ExpeditionActivity, ExpeditionLocation, ExpeditionResource, ExpeditionRoute
+
+# Import all models to make them accessible from models package
+from app.models.team_member import TeamMember
+from app.models.team_role_configuration import TeamRoleConfiguration
+from app.models.expedition import Expedition
+from app.models.activity import Activity
