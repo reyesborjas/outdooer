@@ -1,11 +1,11 @@
-# middleware/permissions.py
+# app/middleware/permissions.py
 from functools import wraps
 from flask import request, jsonify, g
 from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
-from models.team_member import TeamMember
-from models.team_role_configuration import TeamRoleConfiguration
-from models.expedition import Expedition
-from models.activity import Activity
+from app.models.team_member import TeamMember
+from app.models.team_role_configuration import TeamRoleConfiguration
+from app.models.expedition import Expedition
+from app.models.activity import Activity
 
 def check_role_permission(operation):
     """
@@ -84,15 +84,3 @@ def check_role_permission(operation):
             return func(*args, **kwargs)
         return wrapper
     return decorator
-
-# Example usage in routes:
-"""
-@app.route('/api/expeditions', methods=['POST'])
-@check_role_permission('create_expedition')
-def create_expedition():
-    # No need to check permissions here, middleware has already verified
-    # You can access g.role_level if needed for additional logic
-    data = request.get_json()
-    # Create expedition...
-    return jsonify(new_expedition.to_dict()), 201
-"""

@@ -1,5 +1,5 @@
-# scripts/setup_role_configurations.py
-from models.team_role_configuration import TeamRoleConfiguration
+# app/scripts/setup_role_configurations.py
+from app.models.team_role_configuration import TeamRoleConfiguration
 from app.database import db
 
 def setup_role_configurations():

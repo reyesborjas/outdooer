@@ -1,14 +1,14 @@
-# expeditions/routes.py
+# app/api/expeditions/routes.py
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from middleware.permissions import check_role_permission
-from models.expedition import Expedition
-from expeditions.controllers import (
+from app.middleware.permissions import check_role_permission
+from app.models.expedition import Expedition
+from app.api.expeditions.controllers import (
     create_expedition,
     update_expedition,
     delete_expedition,
-    get_expeditions,
-    get_expedition
+    get_all_expeditions as get_expeditions,
+    get_expedition_by_id as get_expedition
 )
 
 # Create a blueprint for the expeditions API

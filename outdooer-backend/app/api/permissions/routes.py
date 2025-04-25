@@ -1,15 +1,16 @@
-# permissions/routes.py
+# app/api/permissions/routes.py
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from services.permission_service import PermissionService
-from models.team_role_configuration import TeamRoleConfiguration
-from models.expedition import Expedition
-from models.activity import Activity
-from models.team_member import TeamMember
+from app.services.permission_service import PermissionService
+from app.models.team_role_configuration import TeamRoleConfiguration
+from app.models.expedition import Expedition
+from app.models.activity import Activity
+from app.models.team_member import TeamMember
 from app.database import db
 
-# Create a blueprint for the permissions API
-permissions_bp = Blueprint('permissions', __name__, url_prefix='/api/permissions')
+# We're already importing the blueprint from __init__.py
+# so we don't need to create it again
+from app.api.permissions import permissions_bp
 
 @permissions_bp.route('/check', methods=['POST'])
 @jwt_required()
@@ -149,7 +150,7 @@ def sync_permissions():
     """
     try:
         # Import the setup function
-        from scripts.setup_role_configurations import setup_role_configurations
+        from app.scripts.setup_role_configurations import setup_role_configurations
         
         # Re-run the setup to create or update configurations
         setup_role_configurations()

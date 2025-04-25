@@ -1,4 +1,4 @@
-# models/team_role_configuration.py
+# app/models/team_role_configuration.py
 from app.database import db
 
 class TeamRoleConfiguration(db.Model):
