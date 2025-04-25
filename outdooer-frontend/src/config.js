@@ -1,42 +1,42 @@
 // src/config.js
-// This file contains configuration settings for the frontend application
+// Simple configuration file for the Outdooer frontend
 
-// Base URL for API requests
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Environment-specific API base URL
+// For Vite, use import.meta.env instead of process.env
+const getApiBaseUrl = () => {
+  // If using Vite, check for environment variables
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  }
+  
+  // Fallback for other environments or if not using Vite
+  return 'http://localhost:5000';
+};
 
-// Other global configuration settings
-export const APP_NAME = 'Outdooer';
-export const APP_VERSION = '1.0.0';
+// Export the base URL for API requests
+export const API_BASE_URL = getApiBaseUrl();
 
-// Authentication settings
-export const TOKEN_STORAGE_KEY = 'token';
-export const AUTH_HEADER_PREFIX = 'Bearer';
-
-// Default pagination settings
-export const DEFAULT_PAGE_SIZE = 20;
-export const MAX_PAGE_SIZE = 100;
-
-// File upload settings
-export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
-export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-
-// Other API endpoints
+// Export other API endpoints
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/api/auth/login',
     REGISTER: '/api/auth/register',
     ME: '/api/auth/me'
   },
-  TEAMS: {
-    BASE: '/api/teams',
-    MY_TEAMS: '/api/teams/my-teams'
-  },
   ACTIVITIES: {
     BASE: '/api/activities',
     MY_ACTIVITIES: '/api/activities/my-activities'
   },
+  ACTIVITY_DATES: {
+    BASE: '/api/activity-dates',
+    FOR_ACTIVITY: '/api/activity-dates/for-activity'
+  },
   EXPEDITIONS: {
     BASE: '/api/expeditions'
+  },
+  TEAMS: {
+    MY_TEAMS: '/api/teams/my-teams',
+    MEMBERS: '/api/teams/{team_id}/members'
   },
   PERMISSIONS: {
     CHECK: '/api/permissions/check'

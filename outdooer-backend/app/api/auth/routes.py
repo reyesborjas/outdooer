@@ -2,7 +2,7 @@
 from flask import jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
 from datetime import datetime
-from app import db
+from app import db  # Now properly imported from app/__init__.py
 from app.utils.security import check_password_hash
 from app.models.user import User, UserRole
 from app.models.team import Team, TeamMember

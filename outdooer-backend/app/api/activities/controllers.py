@@ -86,8 +86,6 @@ def get_my_activities():
         print(f"Error fetching user activities: {str(e)}")
         return jsonify({'error': f'Failed to fetch user activities: {str(e)}'}), 500
 
-# app/api/activities/controllers.py - Función create_activity modificada
-
 def create_activity():
     """Create a new activity"""
     try:
@@ -195,8 +193,6 @@ def create_activity():
         print(f"Error creating activity: {str(e)}")
         return jsonify({"error": f"Failed to create activity: {str(e)}"}), 500
     
-# app/api/activities/controllers.py - Función update_activity modificada
-
 def update_activity(activity_id):
     """Update an existing activity"""
     try:

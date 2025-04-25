@@ -3,7 +3,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config';
 
 const apiClient = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -33,7 +33,7 @@ export const permissionApi = {
    * @returns {Promise<Object>} - Response with has_permission boolean
    */
   checkPermission: async (data) => {
-    const response = await apiClient.post('/permissions/check', data);
+    const response = await apiClient.post('/api/permissions/check', data);
     return response.data;
   },
   
@@ -42,7 +42,7 @@ export const permissionApi = {
    * @returns {Promise<Object>} - Response with permissions data
    */
   getUserPermissions: async () => {
-    const response = await apiClient.get('/permissions/user');
+    const response = await apiClient.get('/api/permissions/user');
     return response.data;
   },
   
@@ -51,7 +51,9 @@ export const permissionApi = {
    * @returns {Promise<Object>} - Response with role configurations
    */
   getRoleConfigurations: async () => {
-    const response = await apiClient.get('/permissions/role-configurations');
+    const response = await apiClient.get('/api/permissions/role-configurations');
     return response.data;
   }
 };
+
+export default permissionApi;

@@ -18,8 +18,9 @@ class TeamMember(db.Model):
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Define relationships with direct references
-    # Don't include backref/back_populates here as they're on the other models
+    # Define relationships
+    user = db.relationship('User', backref='team_memberships')
+    team = db.relationship('Team', backref='members')
     
     def __repr__(self):
         return f'<TeamMember {self.user_id} in {self.team_id}>'

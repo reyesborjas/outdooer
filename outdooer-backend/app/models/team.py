@@ -28,6 +28,26 @@ class Team(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
+# Other related models can be added here if needed
+class TeamMember(db.Model):
+    __tablename__ = 'team_members'
+    
+    team_member_id = db.Column(db.Integer, primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    role_level = db.Column(db.Integer, nullable=False)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (db.UniqueConstraint('team_id', 'user_id'),)
+    
+    # Define relationships
+    user = db.relationship('User', back_populates='team_memberships')
+    team = db.relationship('Team', back_populates='members')
+    
+    def __repr__(self):
+        return f'<TeamMember {self.user_id} in {self.team_id}>'
+
 class TeamRoleConfiguration(db.Model):
     __tablename__ = 'team_role_configurations'
     

@@ -18,10 +18,9 @@ def create_app(config_name='default'):
     db.init_app(app)
     jwt = JWTManager(app)
     
-    # Import and register blueprints
-    # This is done here to avoid circular import issues
+    # Register blueprints
     with app.app_context():
-        # Register blueprints - import them here to avoid circular imports
+        # Import and register blueprints here to avoid circular imports
         from app.api.auth import auth_bp
         from app.api.activities import activities_bp
         from app.api.invitation import invitations_bp

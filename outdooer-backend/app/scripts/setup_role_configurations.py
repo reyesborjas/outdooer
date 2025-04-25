@@ -1,6 +1,6 @@
 # app/scripts/setup_role_configurations.py
 from app.models.team_role_configuration import TeamRoleConfiguration
-from app.database import db
+from app import db
 
 def setup_role_configurations():
     """
