@@ -16,8 +16,9 @@ class TeamRoleConfiguration(db.Model):
     level_4_name = db.Column(db.String(100), default='Base Guide')
     updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     
-    # Define relationship with Team
-    team = db.relationship('Team', backref=db.backref('role_config', uselist=False))
+    # Define relationship with Team - fixing the conflicting relationship
+    # Change backref to role_configuration to avoid conflict with other relationships
+    team = db.relationship('Team', backref=db.backref('role_configuration', uselist=False))
     
     def to_dict(self):
         return {

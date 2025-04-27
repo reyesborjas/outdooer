@@ -4,6 +4,7 @@ from flask import jsonify, request
 from app.database import db
 from app.models.expedition import Expedition, ExpeditionActivity
 from app.models.team_member import TeamMember
+from app.models.team_role_permissions import TeamRolePermissions
 from flask_jwt_extended import get_jwt_identity
 from datetime import datetime
 
@@ -15,6 +16,37 @@ def get_user_role_level(user_id, team_id):
     """Return the role level of a user within a team."""
     member = TeamMember.query.filter_by(user_id=user_id, team_id=team_id).first()
     return member.role_level if member else None
+
+def check_expedition_permission(user_id, team_id, permission_key):
+    """Check if user has permission for expedition operation."""
+    # Get the user's role level in this team
+    role_level = get_user_role_level(user_id, team_id)
+    if not role_level:
+        return False, "You are not a member of this team"
+    
+    # First check team-specific permissions
+    team_permission = TeamRolePermissions.query.filter_by(
+        team_id=team_id,
+        role_level=role_level,
+        permission_key=permission_key
+    ).first()
+    
+    # If team-specific permission exists, use it
+    if team_permission:
+        return team_permission.is_enabled, None
+    
+    # Fall back to global permissions
+    global_permission = TeamRolePermissions.query.filter_by(
+        team_id=None,
+        role_level=role_level,
+        permission_key=permission_key
+    ).first()
+    
+    if global_permission:
+        return global_permission.is_enabled, None
+    
+    # Default to no permission if no rules found
+    return False, "Permission not defined"
 
 # =======================
 # Expedition Endpoints
@@ -57,6 +89,19 @@ def create_expedition():
         data = request.get_json()
         current_user_id = get_jwt_identity()
 
+        # Get team_id from request data
+        team_id = data.get('team_id')
+        if not team_id:
+            return jsonify({'error': 'Team ID is required'}), 400
+            
+        # Check permission to create expedition
+        has_permission, error_msg = check_expedition_permission(
+            current_user_id, team_id, 'create_expedition'
+        )
+        
+        if not has_permission:
+            return jsonify({'error': error_msg or 'You do not have permission to create expeditions'}), 403
+
         if 'created_by' not in data:
             data['created_by'] = current_user_id
 
@@ -64,7 +109,7 @@ def create_expedition():
             data['leader_id'] = data['created_by']
 
         expedition = Expedition(
-            team_id=data.get('team_id'),
+            team_id=team_id,
             title=data['title'],
             description=data['description'],
             start_date=datetime.fromisoformat(data['start_date']),
@@ -94,7 +139,27 @@ def create_expedition():
 def update_expedition(expedition_id):
     try:
         expedition = Expedition.query.get_or_404(expedition_id)
+        current_user_id = get_jwt_identity()
         data = request.get_json()
+        
+        # Check permission to update expedition
+        team_id = expedition.team_id
+        has_permission, error_msg = check_expedition_permission(
+            current_user_id, team_id, 'update_expedition'
+        )
+        
+        # Special case: Technical guides (level 3) can update their own expeditions
+        # even if the general permission is disabled
+        if not has_permission:
+            role_level = get_user_role_level(current_user_id, team_id)
+            is_own_expedition = expedition.created_by == current_user_id or expedition.leader_id == current_user_id
+            
+            # Level 3 guide can update own expedition
+            if role_level == 3 and is_own_expedition:
+                has_permission = True
+                
+        if not has_permission:
+            return jsonify({'error': error_msg or 'You do not have permission to update this expedition'}), 403
 
         for key, value in data.items():
             if hasattr(expedition, key):
@@ -116,6 +181,16 @@ def update_expedition(expedition_id):
 def delete_expedition(expedition_id):
     try:
         expedition = Expedition.query.get_or_404(expedition_id)
+        current_user_id = get_jwt_identity()
+        
+        # Check permission to delete expedition
+        team_id = expedition.team_id
+        has_permission, error_msg = check_expedition_permission(
+            current_user_id, team_id, 'delete_expedition'
+        )
+        
+        if not has_permission:
+            return jsonify({'error': error_msg or 'You do not have permission to delete this expedition'}), 403
 
         db.session.delete(expedition)
         db.session.commit()
@@ -142,6 +217,24 @@ def add_expedition_activities(expedition_id):
         data = request.get_json()
         expedition = Expedition.query.get_or_404(expedition_id)
         current_user_id = get_jwt_identity()
+        
+        # Check permission to update expedition
+        team_id = expedition.team_id
+        has_permission, error_msg = check_expedition_permission(
+            current_user_id, team_id, 'update_expedition'
+        )
+        
+        # Special case: Technical guides (level 3) can update their own expeditions
+        if not has_permission:
+            role_level = get_user_role_level(current_user_id, team_id)
+            is_own_expedition = expedition.created_by == current_user_id or expedition.leader_id == current_user_id
+            
+            # Level 3 guide can update own expedition
+            if role_level == 3 and is_own_expedition:
+                has_permission = True
+                
+        if not has_permission:
+            return jsonify({'error': error_msg or 'You do not have permission to update this expedition\'s activities'}), 403
 
         # Clear existing activities first
         ExpeditionActivity.query.filter_by(expedition_id=expedition_id).delete()

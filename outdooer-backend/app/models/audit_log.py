@@ -1,6 +1,6 @@
-# New model for the audit log - define in app/models/audit_log.py
+# app/models/audit_log.py
 
-from app import db
+from app.database import db
 from datetime import datetime
 
 class TeamSettingsAuditLog(db.Model):
@@ -15,6 +15,18 @@ class TeamSettingsAuditLog(db.Model):
     new_value = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships
+    # Relationships - fixed to use back_populates instead of backref
     team = db.relationship('Team', back_populates='audit_logs')
-    user = db.relationship('User', back_populates='audit_actions')
+    user = db.relationship('User', backref='audit_actions')
+    
+    def to_dict(self):
+        return {
+            'log_id': self.log_id,
+            'team_id': self.team_id,
+            'user_id': self.user_id,
+            'user_role_level': self.user_role_level,
+            'setting_type': self.setting_type,
+            'old_value': self.old_value,
+            'new_value': self.new_value,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }

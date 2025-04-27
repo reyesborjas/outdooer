@@ -1,5 +1,7 @@
 # app/database.py
-from flask_sqlalchemy import SQLAlchemy
+"""
+This module is deprecated - use extensions module instead
+Re-exporting db from extensions for backward compatibility
+"""
 
-# Initialize SQLAlchemy instance
-db = SQLAlchemy()
+from app.extensions import db

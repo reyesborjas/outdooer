@@ -1,5 +1,5 @@
 # app/models/user.py
-from app import db
+from app.database import db
 from datetime import datetime
 
 class User(db.Model):
@@ -22,7 +22,6 @@ class User(db.Model):
     account_status = db.Column(db.String(20), default='active')
     
     # Define relationships
-    # Note: Using strings for some relationships to avoid circular imports
     roles = db.relationship('UserRole', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
     team_memberships = db.relationship('TeamMember', back_populates='user', lazy='dynamic', cascade='all, delete-orphan')
     created_activities = db.relationship('Activity', foreign_keys='Activity.created_by', back_populates='creator')

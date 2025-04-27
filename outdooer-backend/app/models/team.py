@@ -12,11 +12,11 @@ class Team(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     team_status = db.Column(db.String(20), default='active')
     
-    # Define relationships
+    # Define relationships - updated to fix conflicts
     members = db.relationship('TeamMember', back_populates='team', lazy='dynamic')
     activities = db.relationship("Activity", back_populates="team", lazy='dynamic')
     expeditions = db.relationship("Expedition", back_populates="team", lazy='dynamic')
-    role_config = db.relationship("TeamRoleConfiguration", backref="team", uselist=False)
+    # role_config relationship is now defined in TeamRoleConfiguration model
     revenue_sharing = db.relationship("TeamRevenueSharing", backref="team")
     metrics = db.relationship("TeamMetrics", backref="team", uselist=False)
     microsites = db.relationship("TeamMicrosites", backref="team", uselist=False)
