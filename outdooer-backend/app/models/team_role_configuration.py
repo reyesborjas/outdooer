@@ -3,27 +3,29 @@ from app.database import db
 
 class TeamRoleConfiguration(db.Model):
     """
-    Model for global role configurations that define the default permissions
-    for each role level across all teams.
+    Model for team-specific role names configurations (e.g., custom role names per team).
+    Maps to the team_role_configurations table in the database.
     """
     __tablename__ = 'team_role_configurations'
     
-    # This is for the global configuration - not team specific
     role_config_id = db.Column(db.Integer, primary_key=True)
-    role_level = db.Column(db.Integer, nullable=False)  # 1=Master, 2=Tactical, 3=Technical, 4=Base
-    operation = db.Column(db.String(50), nullable=False)  # e.g., 'create_expedition', 'delete_activity'
-    is_permitted = db.Column(db.Boolean, default=False)
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'))
+    level_1_name = db.Column(db.String(100), default='Master Guide')
+    level_2_name = db.Column(db.String(100), default='Tactical Guide')
+    level_3_name = db.Column(db.String(100), default='Technical Guide')
+    level_4_name = db.Column(db.String(100), default='Base Guide')
+    updated_at = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
     
-    # Add unique constraint to prevent duplicates
-    __table_args__ = (
-        db.UniqueConstraint('role_level', 'operation', name='uq_role_operation'),
-        {'extend_existing': True}
-    )
+    # Define relationship with Team
+    team = db.relationship('Team', backref=db.backref('role_config', uselist=False))
     
     def to_dict(self):
         return {
             'role_config_id': self.role_config_id,
-            'role_level': self.role_level,
-            'operation': self.operation,
-            'is_permitted': self.is_permitted
+            'team_id': self.team_id,
+            'level_1_name': self.level_1_name,
+            'level_2_name': self.level_2_name,
+            'level_3_name': self.level_3_name,
+            'level_4_name': self.level_4_name,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

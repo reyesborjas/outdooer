@@ -1,15 +1,16 @@
-# app/models/team_role_permissions.py
+# app/models/global_role_permissions.py
 from app.database import db
 
-class TeamRolePermissions(db.Model):
+class GlobalRolePermission(db.Model):
     """
-    Model for team-specific role permissions.
-    Maps to the team_role_permissions table for team-specific permissions.
+    Model for global role permissions that define the default permissions
+    for each role level across all teams.
+    Maps to the team_role_permissions table where team_id is NULL.
     """
     __tablename__ = 'team_role_permissions'
     
     permission_id = db.Column(db.Integer, primary_key=True)
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=False)  # Must be non-null for team permissions
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=True)  # NULL for global permissions
     role_level = db.Column(db.Integer, nullable=False)  # 1=Master, 2=Tactical, 3=Technical, 4=Base
     permission_key = db.Column(db.String(100), nullable=False)  # e.g., 'create_expedition', 'delete_activity'
     is_enabled = db.Column(db.Boolean, default=False)
@@ -17,8 +18,8 @@ class TeamRolePermissions(db.Model):
     modified_at = db.Column(db.DateTime, default=db.func.now())
     
     # Define relationships
-    team = db.relationship('Team', backref='team_permissions')
-    modifier = db.relationship('User', backref='modified_team_permissions')
+    team = db.relationship('Team', backref='role_permissions')
+    modifier = db.relationship('User', backref='modified_permissions')
     
     __table_args__ = (
         db.UniqueConstraint('team_id', 'role_level', 'permission_key', name='unique_team_role_permission'),

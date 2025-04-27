@@ -1,7 +1,7 @@
-# app/services/permission_service.py
+# app/services/permission_service.py - Updated to use the new models
 from app.models.team_member import TeamMember
 from app.models.team_role_permissions import TeamRolePermissions
-from app.models.team_role_configuration import TeamRoleConfiguration
+from app.models.global_role_permissions import GlobalRolePermission
 from app.database import db
 
 class PermissionService:
@@ -59,13 +59,14 @@ class PermissionService:
         if team_permission:
             has_permission = team_permission.is_enabled
         else:
-            # Fall back to global role configuration
-            global_permission = TeamRoleConfiguration.query.filter_by(
+            # Fall back to global role permission
+            global_permission = GlobalRolePermission.query.filter_by(
+                team_id=None,
                 role_level=role_level,
-                operation=permission_key
+                permission_key=permission_key
             ).first()
             
-            has_permission = global_permission.is_permitted if global_permission else False
+            has_permission = global_permission.is_enabled if global_permission else False
         
         if not has_permission:
             # Get role name for better error message
@@ -241,6 +242,26 @@ class PermissionService:
         return result
     
     @staticmethod
+    def get_global_permissions():
+        """
+        Get all global permissions, organized by role level
+        
+        Returns:
+            dict: Permissions organized by role level
+        """
+        permissions = GlobalRolePermission.query.filter_by(team_id=None).all()
+        
+        result = {1: {}, 2: {}, 3: {}, 4: {}}
+        
+        for permission in permissions:
+            if permission.role_level not in result:
+                result[permission.role_level] = {}
+            
+            result[permission.role_level][permission.permission_key] = permission.is_enabled
+        
+        return result
+    
+    @staticmethod
     def get_user_permissions(user_id):
         """
         Get all permissions for a user across all their teams
@@ -275,5 +296,16 @@ class PermissionService:
             
             for permission in permissions:
                 result[team_id].append(permission.permission_key)
+            
+            # Add fallback to global permissions if no team-specific permission exists
+            global_permissions = GlobalRolePermission.query.filter_by(
+                team_id=None,
+                role_level=role_level,
+                is_enabled=True
+            ).all()
+            
+            for permission in global_permissions:
+                if permission.permission_key not in result[team_id]:
+                    result[team_id].append(permission.permission_key)
         
         return result
