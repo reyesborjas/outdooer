@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect } from 'react';
 import { authApi } from '../api/auth';
-import { permissionApi } from '../api/permissions'; // New API for checking permissions
+import permissionService from '../services/permissionService';
 
 export const AuthContext = createContext(null);
 
@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [permissionCache, setPermissionCache] = useState({});
 
   // Initialize authentication on app load
   useEffect(() => {
@@ -42,6 +41,10 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', data.access_token);
       const userData = await authApi.getCurrentUser();
       setUser(userData);
+      
+      // Clear permission cache on login
+      permissionService.clearCache();
+      
       return true;
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Login failed. Please check your credentials.';
@@ -61,6 +64,10 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', data.access_token);
       const currentUser = await authApi.getCurrentUser();
       setUser(currentUser);
+      
+      // Clear permission cache on register
+      permissionService.clearCache();
+      
       return true;
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Registration failed. Please try again.';
@@ -80,7 +87,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       localStorage.removeItem('token');
-      setPermissionCache({}); // Clear permission cache on logout
+      
+      // Clear permission cache on logout
+      permissionService.clearCache();
     }
   };
 
@@ -95,81 +104,96 @@ export const AuthProvider = ({ children }) => {
   // Team role checks
   const getRoleLevelInTeam = (teamId) => {
     if (!user?.teams) return null;
-    const teamMembership = user.teams.find(team => team.team_id === teamId);
+    const teamMembership = user.teams.find(team => team.team_id === Number(teamId));
     return teamMembership ? teamMembership.role_level : null;
   };
 
+  // Role level checks by role type
   const isMasterGuide = () => user?.teams?.some(team => team.role_level === 1 || team.is_master_guide);
   const isTacticalGuide = () => user?.teams?.some(team => team.role_level === 2);
   const isTechnicalGuide = () => user?.teams?.some(team => team.role_level === 3);
   const isBaseGuide = () => user?.teams?.some(team => team.role_level === 4);
-
-  // Permission check helper with backend validation and caching
-  const checkPermission = async (operation, resourceId = null, teamId = null) => {
-    if (isAdmin()) return true; // Admins always have permission
-    
-    if (!user) return false;
-    
-    // Generate cache key
-    const cacheKey = `${operation}_${resourceId || ''}_${teamId || ''}`;
-    
-    // Check cache first
-    if (permissionCache[cacheKey] !== undefined) {
-      return permissionCache[cacheKey];
-    }
-    
-    try {
-      // Call backend permission service
-      const response = await permissionApi.checkPermission({
-        operation,
-        resource_id: resourceId,
-        team_id: teamId
-      });
-      
-      // Update cache
-      setPermissionCache(prev => ({
-        ...prev,
-        [cacheKey]: response.has_permission
-      }));
-      
-      return response.has_permission;
-    } catch (err) {
-      console.error('Permission check error:', err);
-      return false;
-    }
+  
+  // Check if user has a specific role level in any team
+  const hasRoleLevel = (level) => {
+    if (!user?.teams) return false;
+    return user.teams.some(team => team.role_level <= level);
   };
 
-  // Permission checks - these now check with the backend
+  // Permission checks using permission service - these are async operations
   const canCreateActivity = async (teamId) => {
-    return checkPermission('create_activity', null, teamId);
+    return permissionService.canCreateActivity(teamId);
   };
 
   const canEditActivity = async (activity) => {
-    if (!activity) return false;
-    return checkPermission('update_activity', activity.id, activity.team_id);
+    return permissionService.canEditActivity(activity);
   };
 
   const canDeleteActivity = async (activity) => {
-    if (!activity) return false;
-    return checkPermission('delete_activity', activity.id, activity.team_id);
+    return permissionService.canDeleteActivity(activity);
   };
 
   const canCreateExpedition = async (teamId) => {
-    return checkPermission('create_expedition', null, teamId);
+    return permissionService.canCreateExpedition(teamId);
   };
 
   const canEditExpedition = async (expedition) => {
-    if (!expedition) return false;
-    return checkPermission('update_expedition', expedition.id, expedition.team_id);
+    return permissionService.canEditExpedition(expedition);
   };
 
   const canDeleteExpedition = async (expedition) => {
-    if (!expedition) return false;
-    return checkPermission('delete_expedition', expedition.id, expedition.team_id);
+    return permissionService.canDeleteExpedition(expedition);
+  };
+  
+  const canCreateInvitation = async (teamId) => {
+    return permissionService.canCreateInvitation(teamId);
+  };
+  
+  const canManageTeamMembers = async (teamId) => {
+    return permissionService.canManageTeamMembers(teamId);
+  };
+  
+  const canUpdateTeamSettings = async (teamId) => {
+    return permissionService.canUpdateTeamSettings(teamId);
   };
 
   // Synchronous permission checks for UI rendering (based on role level only)
   // These are less accurate but don't require async operations
+  const canCreateActivitySync = (teamId) => {
+    if (isAdmin()) return true;
+    const roleLevel = getRoleLevelInTeam(teamId);
+    return roleLevel !== null && roleLevel <= 3; // Master, Tactical, and Technical Guides
+  };
+
+  const canEditActivitySync = (activity) => {
+    if (!activity) return false;
+    if (isAdmin()) return true;
+    
+    const roleLevel = getRoleLevelInTeam(activity.team_id);
+    if (!roleLevel) return false;
+    
+    // Master and Tactical Guides can edit any activity
+    if (roleLevel <= 2) return true;
+    
+    // Technical Guides can edit activities they created or lead
+    if (roleLevel === 3) {
+      return activity.created_by === user.user_id || activity.leader_id === user.user_id;
+    }
+    
+    return false; // Base Guides cannot edit
+  };
+
+  const canDeleteActivitySync = (activity) => {
+    if (!activity) return false;
+    if (isAdmin()) return true;
+    
+    const roleLevel = getRoleLevelInTeam(activity.team_id);
+    if (!roleLevel) return false;
+    
+    // Only Master Guides and Tactical Guides can delete activities
+    return roleLevel <= 2;
+  };
+
   const canCreateExpeditionSync = (teamId) => {
     if (isAdmin()) return true;
     const roleLevel = getRoleLevelInTeam(teamId);
@@ -195,6 +219,24 @@ export const AuthProvider = ({ children }) => {
     if (isAdmin()) return true;
     
     const roleLevel = getRoleLevelInTeam(expedition.team_id);
+    return roleLevel <= 2; // Only Master and Tactical Guides
+  };
+  
+  const canCreateInvitationSync = (teamId) => {
+    if (isAdmin()) return true;
+    const roleLevel = getRoleLevelInTeam(teamId);
+    return roleLevel <= 2; // Only Master and Tactical Guides
+  };
+  
+  const canManageTeamMembersSync = (teamId) => {
+    if (isAdmin()) return true;
+    const roleLevel = getRoleLevelInTeam(teamId);
+    return roleLevel <= 2; // Only Master and Tactical Guides
+  };
+  
+  const canUpdateTeamSettingsSync = (teamId) => {
+    if (isAdmin()) return true;
+    const roleLevel = getRoleLevelInTeam(teamId);
     return roleLevel === 1; // Only Master Guides
   };
 
@@ -219,6 +261,7 @@ export const AuthProvider = ({ children }) => {
         isTechnicalGuide,
         isBaseGuide,
         getRoleLevelInTeam,
+        hasRoleLevel,
         // Async permission checks (accurate, backend validated)
         canCreateActivity,
         canEditActivity,
@@ -226,10 +269,19 @@ export const AuthProvider = ({ children }) => {
         canCreateExpedition,
         canEditExpedition,
         canDeleteExpedition,
+        canCreateInvitation,
+        canManageTeamMembers,
+        canUpdateTeamSettings,
         // Sync permission checks (for UI rendering)
+        canCreateActivitySync,
+        canEditActivitySync,
+        canDeleteActivitySync,
         canCreateExpeditionSync,
         canEditExpeditionSync,
         canDeleteExpeditionSync,
+        canCreateInvitationSync,
+        canManageTeamMembersSync,
+        canUpdateTeamSettingsSync,
       }}
     >
       {children}

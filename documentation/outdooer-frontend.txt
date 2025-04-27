@@ -188,53 +188,213 @@ The system has a hierarchical role structure:
 **Symptoms:**
 - Unexpected logouts
 - "Unauthorized" errors when accessing protected routes
+- Missing role-based UI elements
+
+**Root Causes:**
+- JWT token expiration
+- Missing or invalid team context
+- Incorrect permission checks
 
 **Troubleshooting:**
-1. Check token expiration and refresh mechanism
-2. Verify that `localStorage.getItem('token')` is working correctly
-3. Ensure API interceptors are properly handling 401 responses
+1. Check token expiration and refresh mechanism:
+   ```javascript
+   // Add token expiration check in AuthContext
+   const isTokenExpired = () => {
+     const token = localStorage.getItem('token');
+     if (!token) return true;
+     
+     try {
+       // JWT tokens are in three parts separated by dots
+       const payload = JSON.parse(atob(token.split('.')[1]));
+       return payload.exp * 1000 < Date.now();
+     } catch (e) {
+       return true;
+     }
+   };
+   ```
 
-```jsx
-// In the API interceptor
-if (error.response && error.response.status === 401) {
-  localStorage.removeItem('token');
-  window.location.href = '/login';
-}
-```
+2. Verify permission checks are matching backend expectations:
+   ```javascript
+   // Ensure permission checks match backend role system
+   const canCreateActivity = async (teamId) => {
+     // Check against the 4-level role hierarchy
+     // Master Guide (1), Tactical Guide (2), Technical Guide (3), Base Guide (4)
+     const roleLevel = getRoleLevelInTeam(teamId);
+     return roleLevel && roleLevel <= 3; // Technical guides and above can create
+   };
+   ```
+
+3. Ensure team context is properly set for team-specific operations:
+   ```javascript
+   // Always include team_id in relevant API calls
+   const createActivity = async (activityData) => {
+     if (!activityData.team_id) {
+       throw new Error('Team ID is required for activity creation');
+     }
+     return api.post('/activities', activityData);
+   };
+   ```
 
 ### 5.2 Route Access Problems
 
 **Symptoms:**
 - Users redirected to `/unauthorized` despite having correct permissions
 - Access to routes that should be restricted
+- Inconsistent UI elements based on permissions
+
+**Root Causes:**
+- Misalignment between frontend role checks and backend permission system
+- Missing team context in permission queries
+- Incorrect implementation of the 4-level role hierarchy
 
 **Troubleshooting:**
-1. Check `requiredRoles` array in route definitions
-2. Verify role checking functions in `AuthContext`
-3. Ensure user role data is correctly loaded from the API
+1. Align the `ProtectedRoute` component with backend role levels:
+   ```jsx
+   // Update ProtectedRoute to handle the 4-level hierarchy
+   const ProtectedRoute = ({ requiredRoles = [], requiredLevel = null, teamIdParam = null }) => {
+     const { user, isAuthenticated, hasRoleLevel } = useContext(AuthContext);
+     const { teamId } = useParams();
+     const resolvedTeamId = teamIdParam || teamId;
+     
+     // Check role level if teamId is available
+     if (requiredLevel !== null && resolvedTeamId) {
+       const userLevel = user?.teams?.find(t => t.team_id === resolvedTeamId)?.role_level;
+       if (!userLevel || userLevel > requiredLevel) {
+         return <Navigate to="/unauthorized" replace />;
+       }
+     }
+     
+     // Rest of role checking logic...
+   };
+   ```
+
+2. Implement proper checks for Master Guide vs. Tactical Guide operations:
+   ```jsx
+   // In your component
+   const isMasterGuide = team?.user_role_level === 1;
+   const isTacticalGuide = team?.user_role_level === 2;
+   
+   // Only show team settings to Master Guides
+   {isMasterGuide && (
+     <Button onClick={() => navigate(`/team-management/${team.team_id}/settings`)}>
+       Team Settings
+     </Button>
+   )}
+   ```
+
+3. Use the correct endpoint for permission checks:
+   ```javascript
+   // Use explicit permission checks from the backend
+   const checkPermission = async (operation, resourceId = null, teamId = null) => {
+     try {
+       const response = await api.post('/permissions/check', {
+         operation,
+         resource_id: resourceId,
+         team_id: teamId
+       });
+       return response.data.has_permission;
+     } catch (err) {
+       console.error('Permission check error:', err);
+       return false;
+     }
+   };
+   ```
 
 ### 5.3 API Connection Issues
 
 **Symptoms:**
 - Network errors in console
 - "Failed to load data" errors
+- Empty or incorrect data in components
+
+**Root Causes:**
+- Mismatched API endpoint structure
+- Missing team context in requests
+- Incorrect handling of nested relationships
 
 **Troubleshooting:**
-1. Verify API base URL in the config
-2. Check CORS settings in both frontend and backend
-3. Ensure proper error handling in API calls
+1. Verify API endpoints match the backend structure:
+   ```javascript
+   // Update API service to match backend endpoints
+   export const activitiesApi = {
+     getMyActivities: async () => {
+       try {
+         const response = await api.get('/activities/my-activities');
+         return response.data;
+       } catch (error) {
+         console.error('Error fetching my activities:', error.response?.data || error.message);
+         throw error;
+       }
+     },
+     
+     // Make sure to follow the exact API structure from backend
+     getExpeditionActivities: async (expeditionId) => {
+       try {
+         const response = await api.get(`/expeditions/${expeditionId}/activities`);
+         return response.data;
+       } catch (error) {
+         console.error('Error fetching expedition activities:', error);
+         return { activities: [] }; // Provide fallback
+       }
+     }
+   };
+   ```
 
-```jsx
-// Add this to vite.config.js
-server: {
-  proxy: {
-    '/api': {
-      target: 'http://localhost:5000',
-      changeOrigin: true,
-    },
-  },
-}
-```
+2. Add proper handling for expedition-activity relationship:
+   ```javascript
+   // When creating expeditions with activities
+   const createExpedition = async (expeditionData, activities) => {
+     try {
+       // First create the expedition
+       const expeditionResponse = await api.post('/expeditions', expeditionData);
+       const expeditionId = expeditionResponse.data.expedition_id;
+       
+       // Then add activities to the expedition
+       if (activities && activities.length > 0) {
+         await api.post(`/expeditions/${expeditionId}/activities`, {
+           activities: activities.map((act, index) => ({
+             ...act,
+             sequence_order: index + 1
+           }))
+         });
+       }
+       
+       return expeditionResponse.data;
+     } catch (error) {
+       console.error('Error creating expedition:', error);
+       throw error;
+     }
+   };
+   ```
+
+3. Configure the API proxy correctly in Vite:
+   ```javascript
+   // In vite.config.js
+   export default defineConfig({
+     plugins: [react()],
+     server: {
+       proxy: {
+         '/api': {
+           target: 'http://localhost:5000',
+           changeOrigin: true,
+           rewrite: (path) => path.replace(/^\/api/, '')  // Remove /api prefix if needed
+         },
+       },
+     },
+   });
+   ```
+
+4. Add timeout handling for long-running operations:
+   ```javascript
+   // Configure axios with timeout
+   const api = axios.create({
+     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+     headers: {
+       'Content-Type': 'application/json',
+     },
+     timeout: 30000, // 30 second timeout for long operations
+   });
+   ```
 
 ## 6. Recommended Improvements
 
