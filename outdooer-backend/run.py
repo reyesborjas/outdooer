@@ -18,6 +18,7 @@ import sys
 import argparse
 from app import create_app
 
+
 def parse_args():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description='Run the Outdooer API server')

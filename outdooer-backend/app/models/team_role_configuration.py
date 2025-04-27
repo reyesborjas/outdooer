@@ -14,7 +14,7 @@ class TeamRoleConfiguration(db.Model):
         {'extend_existing': True}
     )
     
-    id = db.Column(db.Integer, primary_key=True)
+    role_config_id = db.Column(db.Integer, primary_key=True)
     role_level = db.Column(db.Integer, nullable=False)  # 1=Master, 2=Tactical, 3=Technical, 4=Base
     operation = db.Column(db.String(50), nullable=False)  # e.g., 'create_expedition', 'delete_activity'
     is_permitted = db.Column(db.Boolean, default=False)

@@ -17,6 +17,9 @@ class Team(db.Model):
     
     # Add members relationship
     members = db.relationship('TeamMember', back_populates='team', lazy='dynamic')
+    activities = db.relationship("Activity", back_populates="team", lazy='dynamic')
+    expeditions = db.relationship("Expedition", back_populates="team", lazy='dynamic')
+    
     
 
 class TeamRoleConfiguration(db.Model):

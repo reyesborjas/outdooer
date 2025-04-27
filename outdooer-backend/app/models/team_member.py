@@ -21,3 +21,4 @@ class TeamMember(db.Model):
     # Define proper relationships
     user = db.relationship('User', back_populates='team_memberships')
     team = db.relationship('Team', back_populates='members')
+    
