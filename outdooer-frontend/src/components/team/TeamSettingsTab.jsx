@@ -1,11 +1,27 @@
 // src/components/team/TeamSettingsTab.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { 
+  Card, 
+  Form, 
+  Button, 
+  Alert, 
+  Spinner, 
+  Tabs, 
+  Tab,
+  Modal
+} from 'react-bootstrap';
+import { AuthContext } from '../../context/AuthContext';
 import api from '../../api';
+import TeamPermissionSettings from './TeamPermissionSettings';
+import PermissionGate from '../common/PermissionGate';
 
 const MAX_ROLE_NAME_LENGTH = 30;
 const MIN_ROLE_NAME_LENGTH = 3;
 
 const TeamSettingsTab = ({ team, refreshTeam, setSuccessMessage, setError }) => {
+  const { isAdmin } = useContext(AuthContext);
+
+  const [activeTab, setActiveTab] = useState('roles');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [roleConfig, setRoleConfig] = useState({
     level_1_name: team.role_config?.level_1_name || 'Master Guide',
@@ -26,12 +42,35 @@ const TeamSettingsTab = ({ team, refreshTeam, setSuccessMessage, setError }) => 
   const [confirmDelete, setConfirmDelete] = useState('');
   const [changeHistory, setChangeHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  
+  // Check authorization through the role level
+  const isMasterGuide = isAdmin() || team?.user_role_level === 1;
+  const isViewOnly = !isMasterGuide;
+  
+  // Validate role names for similarity
+  useEffect(() => {
+    const warnings = [];
+    const roleNames = [
+      roleConfig.level_1_name.toLowerCase(),
+      roleConfig.level_2_name.toLowerCase(),
+      roleConfig.level_3_name.toLowerCase(),
+      roleConfig.level_4_name.toLowerCase()
+    ];
 
-  // Only master guide can access settings
-  const isMasterGuide = team?.user_role_level === 1;
-  // Tactical guides can view but not edit
-  const isTacticalGuide = team?.user_role_level === 2;
+    // Check for very similar names (simple check for now)
+    for (let i = 0; i < roleNames.length; i++) {
+      for (let j = i + 1; j < roleNames.length; j++) {
+        if (roleNames[i] === roleNames[j]) {
+          warnings.push(`Role names for Level ${i + 1} and Level ${j + 1} are identical.`);
+        } else if (roleNames[i].includes(roleNames[j]) || roleNames[j].includes(roleNames[i])) {
+          warnings.push(`Role names for Level ${i + 1} and Level ${j + 1} are very similar.`);
+        }
+      }
+    }
 
+    setRoleNameWarnings(warnings);
+  }, [roleConfig]);
+  
   // Fetch change history
   useEffect(() => {
     const fetchChangeHistory = async () => {
@@ -68,43 +107,7 @@ const TeamSettingsTab = ({ team, refreshTeam, setSuccessMessage, setError }) => 
       fetchChangeHistory();
     }
   }, [showHistory]);
-
-  // Validate role names for similarity
-  useEffect(() => {
-    const warnings = [];
-    const roleNames = [
-      roleConfig.level_1_name.toLowerCase(),
-      roleConfig.level_2_name.toLowerCase(),
-      roleConfig.level_3_name.toLowerCase(),
-      roleConfig.level_4_name.toLowerCase()
-    ];
-
-    // Check for very similar names (simple check for now)
-    for (let i = 0; i < roleNames.length; i++) {
-      for (let j = i + 1; j < roleNames.length; j++) {
-        if (roleNames[i] === roleNames[j]) {
-          warnings.push(`Role names for Level ${i + 1} and Level ${j + 1} are identical.`);
-        } else if (roleNames[i].includes(roleNames[j]) || roleNames[j].includes(roleNames[i])) {
-          warnings.push(`Role names for Level ${i + 1} and Level ${j + 1} are very similar.`);
-        }
-      }
-    }
-
-    setRoleNameWarnings(warnings);
-  }, [roleConfig]);
-
-  if (!isMasterGuide && !isTacticalGuide) {
-    return (
-      <div className="alert alert-warning">
-        <h5>Access Restricted</h5>
-        <p className="mb-0">Only the Master Guide can access team settings.</p>
-      </div>
-    );
-  }
-
-  // View-only mode for Tactical Guides
-  const isViewOnly = isTacticalGuide;
-
+  
   // Handle role name changes
   const handleRoleNameChange = (level, value) => {
     setRoleConfig({
@@ -166,12 +169,12 @@ const TeamSettingsTab = ({ team, refreshTeam, setSuccessMessage, setError }) => 
       );
       
       refreshTeam();
-    } catch (error) {
-      console.error('Error updating role configuration:', error);
+    } catch (err) {
+      console.error('Error updating role configuration:', err);
       setError(
         <>
           <i className="bi bi-exclamation-triangle-fill text-danger me-2"></i>
-          {error.response?.data?.error || 'Failed to update role configuration'}
+          {err.response?.data?.error || 'Failed to update role configuration'}
         </>
       );
     } finally {
@@ -198,12 +201,12 @@ const TeamSettingsTab = ({ team, refreshTeam, setSuccessMessage, setError }) => 
       setTeamStatus(status);
       setShowDeactivateModal(false);
       refreshTeam();
-    } catch (error) {
-      console.error('Error updating team status:', error);
+    } catch (err) {
+      console.error('Error updating team status:', err);
       setError(
         <>
           <i className="bi bi-exclamation-triangle-fill text-danger me-2"></i>
-          {error.response?.data?.error || 'Failed to update team status'}
+          {err.response?.data?.error || 'Failed to update team status'}
         </>
       );
     } finally {
@@ -226,450 +229,406 @@ const TeamSettingsTab = ({ team, refreshTeam, setSuccessMessage, setError }) => 
       );
       
       window.location.href = '/dashboard';
-    } catch (error) {
-      console.error('Error deleting team:', error);
+    } catch (err) {
+      console.error('Error deleting team:', err);
       setError(
         <>
           <i className="bi bi-exclamation-triangle-fill text-danger me-2"></i>
-          {error.response?.data?.error || 'Failed to delete team'}
+          {err.response?.data?.error || 'Failed to delete team'}
         </>
       );
       setIsSubmitting(false);
     }
   };
 
+  if (!isMasterGuide) {
+    return (
+      <Alert variant="warning">
+        <h5>Access Restricted</h5>
+        <p className="mb-0">Only the Master Guide can access team settings.</p>
+      </Alert>
+    );
+  }
+
   return (
-    <div className="team-settings-tab">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3>Team Settings</h3>
-        {isViewOnly && (
-          <div className="badge bg-info px-3 py-2">
-            <i className="bi bi-eye me-2"></i>
-            View Only Mode
-          </div>
-        )}
-      </div>
-      
-      {/* Team Role Names Section */}
-      <div className="card mb-4">
-        <div className="card-header d-flex justify-content-between align-items-center">
-          <h5 className="mb-0">Role Names</h5>
-          <button 
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setShowHistory(!showHistory)}
-          >
-            <i className="bi bi-clock-history me-1"></i>
-            {showHistory ? 'Hide History' : 'View History'}
-          </button>
-        </div>
-        <div className="card-body">
-          {showHistory && (
-            <div className="mb-4">
-              <h6 className="mb-3">Change History</h6>
-              <div className="table-responsive">
-                <table className="table table-sm table-bordered">
-                  <thead className="table-light">
-                    <tr>
-                      <th>Changed By</th>
-                      <th>Date</th>
-                      <th>Setting</th>
-                      <th>Old Value</th>
-                      <th>New Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {changeHistory.length > 0 ? (
-                      changeHistory.map(entry => (
-                        <tr key={entry.id}>
-                          <td>{entry.user_name} <small>({entry.user_role})</small></td>
-                          <td>{new Date(entry.change_date).toLocaleString()}</td>
-                          <td>{entry.setting_changed}</td>
-                          <td>{entry.old_value}</td>
-                          <td>{entry.new_value}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="text-center">No change history available</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-          
-          <p className="text-muted mb-3">
-            Customize the names of guide roles for your team. These names will be displayed throughout the platform.
-          </p>
-          
-          {roleNameWarnings.length > 0 && (
-            <div className="alert alert-warning mb-3">
-              <h6 className="alert-heading">
-                <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                Warning
-              </h6>
-              <ul className="mb-0">
-                {roleNameWarnings.map((warning, index) => (
-                  <li key={index}>{warning}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          <div className="mb-3">
-            <label htmlFor="level1Name" className="form-label">Level 1 (Master Guide)</label>
-            <input
-              type="text"
-              className={`form-control ${roleNameErrors.level_1_name ? 'is-invalid' : ''}`}
-              id="level1Name"
-              value={roleConfig.level_1_name}
-              onChange={(e) => handleRoleNameChange(1, e.target.value)}
-              placeholder="Master Guide"
-              disabled={isViewOnly}
-              maxLength={MAX_ROLE_NAME_LENGTH}
-            />
-            {roleNameErrors.level_1_name && (
-              <div className="invalid-feedback">
-                {roleNameErrors.level_1_name}
-              </div>
-            )}
-            <div className="form-text d-flex justify-content-between">
-              <span>The team owner and highest authority level.</span>
-              <span className={roleConfig.level_1_name.length > MAX_ROLE_NAME_LENGTH - 10 ? 'text-danger' : ''}>
-                {roleConfig.level_1_name.length}/{MAX_ROLE_NAME_LENGTH}
-              </span>
-            </div>
-          </div>
-          
-          <div className="mb-3">
-            <label htmlFor="level2Name" className="form-label">Level 2 (Tactical Guide)</label>
-            <input
-              type="text"
-              className={`form-control ${roleNameErrors.level_2_name ? 'is-invalid' : ''}`}
-              id="level2Name"
-              value={roleConfig.level_2_name}
-              onChange={(e) => handleRoleNameChange(2, e.target.value)}
-              placeholder="Tactical Guide"
-              disabled={isViewOnly}
-              maxLength={MAX_ROLE_NAME_LENGTH}
-            />
-            {roleNameErrors.level_2_name && (
-              <div className="invalid-feedback">
-                {roleNameErrors.level_2_name}
-              </div>
-            )}
-            <div className="form-text d-flex justify-content-between">
-              <span>Can help manage the team and create activities/expeditions.</span>
-              <span className={roleConfig.level_2_name.length > MAX_ROLE_NAME_LENGTH - 10 ? 'text-danger' : ''}>
-                {roleConfig.level_2_name.length}/{MAX_ROLE_NAME_LENGTH}
-              </span>
-            </div>
-          </div>
-          
-          <div className="mb-3">
-            <label htmlFor="level3Name" className="form-label">Level 3 (Technical Guide)</label>
-            <input
-              type="text"
-              className={`form-control ${roleNameErrors.level_3_name ? 'is-invalid' : ''}`}
-              id="level3Name"
-              value={roleConfig.level_3_name}
-              onChange={(e) => handleRoleNameChange(3, e.target.value)}
-              placeholder="Technical Guide"
-              disabled={isViewOnly}
-              maxLength={MAX_ROLE_NAME_LENGTH}
-            />
-            {roleNameErrors.level_3_name && (
-              <div className="invalid-feedback">
-                {roleNameErrors.level_3_name}
-              </div>
-            )}
-            <div className="form-text d-flex justify-content-between">
-              <span>Can create and lead activities.</span>
-              <span className={roleConfig.level_3_name.length > MAX_ROLE_NAME_LENGTH - 10 ? 'text-danger' : ''}>
-                {roleConfig.level_3_name.length}/{MAX_ROLE_NAME_LENGTH}
-              </span>
-            </div>
-          </div>
-          
-          <div className="mb-3">
-            <label htmlFor="level4Name" className="form-label">Level 4 (Base Guide)</label>
-            <input
-              type="text"
-              className={`form-control ${roleNameErrors.level_4_name ? 'is-invalid' : ''}`}
-              id="level4Name"
-              value={roleConfig.level_4_name}
-              onChange={(e) => handleRoleNameChange(4, e.target.value)}
-              placeholder="Base Guide"
-              disabled={isViewOnly}
-              maxLength={MAX_ROLE_NAME_LENGTH}
-            />
-            {roleNameErrors.level_4_name && (
-              <div className="invalid-feedback">
-                {roleNameErrors.level_4_name}
-              </div>
-            )}
-            <div className="form-text d-flex justify-content-between">
-              <span>Basic guide with limited permissions.</span>
-              <span className={roleConfig.level_4_name.length > MAX_ROLE_NAME_LENGTH - 10 ? 'text-danger' : ''}>
-                {roleConfig.level_4_name.length}/{MAX_ROLE_NAME_LENGTH}
-              </span>
-            </div>
-          </div>
-          
-          {!isViewOnly && (
-            <button
-              className="btn btn-primary"
-              onClick={handleUpdateRoleConfig}
-              disabled={isSubmitting || !isFormValid()}
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <i className="bi bi-save me-2"></i>
-                  Save Role Names
-                </>
-              )}
-            </button>
-          )}
-        </div>
-      </div>
-      
-      {/* Team Status Section */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <h5 className="mb-0">Team Status</h5>
-        </div>
-        <div className="card-body">
-          <p className="mb-3">
-            Current Status: 
-            <span className={`badge ms-2 ${teamStatus === 'active' ? 'bg-success' : 'bg-danger'}`}>
-              <i className={`bi bi-${teamStatus === 'active' ? 'check-circle-fill' : 'x-circle-fill'} me-1`}></i>
-              {teamStatus === 'active' ? 'Active' : 'Inactive'}
-            </span>
-          </p>
-          
-          <p className="text-muted">
-            {teamStatus === 'active' 
-              ? 'Your team is currently active. Team members can view and join activities and expeditions.'
-              : 'Your team is currently inactive. Activities and expeditions will not be visible to explorers.'}
-          </p>
-          
-          {!isViewOnly && (
-            teamStatus === 'active' ? (
-              <button
-                className="btn btn-warning"
-                onClick={() => setShowDeactivateModal(true)}
+    <div className="team-settings-container">
+      <Tabs
+        activeKey={activeTab}
+        onSelect={(key) => setActiveTab(key)}
+        className="mb-4"
+      >
+        <Tab eventKey="roles" title="Role Names">
+          <Card className="mb-4">
+            <Card.Header className="d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">Role Names</h5>
+              <Button 
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => setShowHistory(!showHistory)}
               >
-                <i className="bi bi-pause-circle me-2"></i>
-                Deactivate Team
-              </button>
-            ) : (
-              <button
-                className="btn btn-success"
-                onClick={() => handleUpdateTeamStatus('active')}
-                disabled={isSubmitting}
+                <i className={`bi bi-${showHistory ? 'eye-slash' : 'clock-history'} me-1`}></i>
+                {showHistory ? 'Hide History' : 'View History'}
+              </Button>
+            </Card.Header>
+            <Card.Body>
+              {showHistory && (
+                <div className="mb-4">
+                  <h6 className="mb-3">Change History</h6>
+                  <div className="table-responsive">
+                    <table className="table table-sm table-bordered">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Changed By</th>
+                          <th>Date</th>
+                          <th>Setting</th>
+                          <th>Old Value</th>
+                          <th>New Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {changeHistory.length > 0 ? (
+                          changeHistory.map(entry => (
+                            <tr key={entry.id}>
+                              <td>{entry.user_name} <small>({entry.user_role})</small></td>
+                              <td>{new Date(entry.change_date).toLocaleString()}</td>
+                              <td>{entry.setting_changed}</td>
+                              <td>{entry.old_value}</td>
+                              <td>{entry.new_value}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="5" className="text-center">No change history available</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-muted mb-3">
+                Customize the names of guide roles for your team. These names will be displayed throughout the platform.
+              </p>
+              
+              {roleNameWarnings.length > 0 && (
+                <Alert variant="warning" className="mb-3">
+                  <h6 className="alert-heading">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    Warning
+                  </h6>
+                  <ul className="mb-0">
+                    {roleNameWarnings.map((warning, index) => (
+                      <li key={index}>{warning}</li>
+                    ))}
+                  </ul>
+                </Alert>
+              )}
+              
+              <div className="mb-3">
+                <Form.Label htmlFor="level1Name">Level 1 (Master Guide)</Form.Label>
+                <Form.Control
+                  type="text"
+                  id="level1Name"
+                  value={roleConfig.level_1_name}
+                  onChange={(e) => handleRoleNameChange(1, e.target.value)}
+                  isInvalid={!!roleNameErrors.level_1_name}
+                  maxLength={MAX_ROLE_NAME_LENGTH}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {roleNameErrors.level_1_name}
+                </Form.Control.Feedback>
+                <Form.Text className="d-flex justify-content-between">
+                  <span>The team owner and highest authority level.</span>
+                  <span className={roleConfig.level_1_name.length > MAX_ROLE_NAME_LENGTH - 10 ? 'text-danger' : ''}>
+                    {roleConfig.level_1_name.length}/{MAX_ROLE_NAME_LENGTH}
+                  </span>
+                </Form.Text>
+              </div>
+              
+              <div className="mb-3">
+                <Form.Label htmlFor="level2Name">Level 2 (Tactical Guide)</Form.Label>
+                <Form.Control
+                  type="text"
+                  id="level2Name"
+                  value={roleConfig.level_2_name}
+                  onChange={(e) => handleRoleNameChange(2, e.target.value)}
+                  isInvalid={!!roleNameErrors.level_2_name}
+                  maxLength={MAX_ROLE_NAME_LENGTH}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {roleNameErrors.level_2_name}
+                </Form.Control.Feedback>
+                <Form.Text className="d-flex justify-content-between">
+                  <span>Can help manage the team and create activities/expeditions.</span>
+                  <span className={roleConfig.level_2_name.length > MAX_ROLE_NAME_LENGTH - 10 ? 'text-danger' : ''}>
+                    {roleConfig.level_2_name.length}/{MAX_ROLE_NAME_LENGTH}
+                  </span>
+                </Form.Text>
+              </div>
+              
+              <div className="mb-3">
+                <Form.Label htmlFor="level3Name">Level 3 (Technical Guide)</Form.Label>
+                <Form.Control
+                  type="text"
+                  id="level3Name"
+                  value={roleConfig.level_3_name}
+                  onChange={(e) => handleRoleNameChange(3, e.target.value)}
+                  isInvalid={!!roleNameErrors.level_3_name}
+                  maxLength={MAX_ROLE_NAME_LENGTH}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {roleNameErrors.level_3_name}
+                </Form.Control.Feedback>
+                <Form.Text className="d-flex justify-content-between">
+                  <span>Can create and lead activities.</span>
+                  <span className={roleConfig.level_3_name.length > MAX_ROLE_NAME_LENGTH - 10 ? 'text-danger' : ''}>
+                    {roleConfig.level_3_name.length}/{MAX_ROLE_NAME_LENGTH}
+                  </span>
+                </Form.Text>
+              </div>
+              
+              <div className="mb-3">
+                <Form.Label htmlFor="level4Name">Level 4 (Base Guide)</Form.Label>
+                <Form.Control
+                  type="text"
+                  id="level4Name"
+                  value={roleConfig.level_4_name}
+                  onChange={(e) => handleRoleNameChange(4, e.target.value)}
+                  isInvalid={!!roleNameErrors.level_4_name}
+                  maxLength={MAX_ROLE_NAME_LENGTH}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {roleNameErrors.level_4_name}
+                </Form.Control.Feedback>
+                <Form.Text className="d-flex justify-content-between">
+                  <span>Basic guide with limited permissions.</span>
+                  <span className={roleConfig.level_4_name.length > MAX_ROLE_NAME_LENGTH - 10 ? 'text-danger' : ''}>
+                    {roleConfig.level_4_name.length}/{MAX_ROLE_NAME_LENGTH}
+                  </span>
+                </Form.Text>
+              </div>
+              
+              <Button
+                variant="primary"
+                onClick={handleUpdateRoleConfig}
+                disabled={isSubmitting || !isFormValid()}
               >
                 {isSubmitting ? (
                   <>
-                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Activating...
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Saving...
                   </>
                 ) : (
                   <>
-                    <i className="bi bi-play-circle me-2"></i>
-                    Activate Team
+                    <i className="bi bi-save me-2"></i>
+                    Save Role Names
                   </>
                 )}
-              </button>
-            )
-          )}
-        </div>
-      </div>
-      
-      {/* Danger Zone Section - Only for Master Guide */}
-      {isMasterGuide && (
-        <div className="card border-danger">
-          <div className="card-header bg-danger text-white">
-            <h5 className="mb-0">
-              <i className="bi bi-exclamation-triangle-fill me-2"></i>
-              Danger Zone
-            </h5>
-          </div>
-          <div className="card-body">
-            <p className="text-danger fw-bold">Warning: These actions cannot be undone!</p>
-            
-            <div className="d-flex justify-content-between align-items-center">
-              <div>
-                <h6>Delete Team</h6>
-                <p className="text-muted mb-0">
-                  Permanently delete this team and all associated data. All activities and expeditions will be removed.
-                </p>
-              </div>
-              <button
-                className="btn btn-outline-danger"
-                onClick={() => setShowDeleteModal(true)}
-              >
-                <i className="bi bi-trash3 me-2"></i>
-                Delete Team
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Deactivate Team Modal */}
-      {showDeactivateModal && (
-        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
+              </Button>
+            </Card.Body>
+          </Card>
+        </Tab>
+        
+        <Tab eventKey="status" title="Team Status">
+          <Card className="mb-4">
+            <Card.Header>
+              <h5 className="mb-0">Team Status</h5>
+            </Card.Header>
+            <Card.Body>
+              <p className="mb-3">
+                Current Status: 
+                <span className={`badge ms-2 ${teamStatus === 'active' ? 'bg-success' : 'bg-danger'}`}>
+                  <i className={`bi bi-${teamStatus === 'active' ? 'check-circle-fill' : 'x-circle-fill'} me-1`}></i>
+                  {teamStatus === 'active' ? 'Active' : 'Inactive'}
+                </span>
+              </p>
+              
+              <p className="text-muted">
+                {teamStatus === 'active' 
+                  ? 'Your team is currently active. Team members can view and join activities and expeditions.'
+                  : 'Your team is currently inactive. Activities and expeditions will not be visible to explorers.'}
+              </p>
+              
+              {teamStatus === 'active' ? (
+                <Button
+                  variant="warning"
+                  onClick={() => setShowDeactivateModal(true)}
+                >
                   <i className="bi bi-pause-circle me-2"></i>
                   Deactivate Team
-                </h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={() => setShowDeactivateModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="alert alert-warning">
-                  <i className="bi bi-info-circle-fill me-2"></i>
-                  Are you sure you want to deactivate your team?
-                </div>
-                <p>While deactivated:</p>
-                <ul>
-                  <li>Your team's activities and expeditions will be hidden from explorers</li>
-                  <li>Team members will still have access to the team dashboard</li>
-                  <li>You can reactivate the team at any time</li>
-                </ul>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={() => setShowDeactivateModal(false)}
-                  disabled={isSubmitting}
-                >
-                  <i className="bi bi-x-circle me-2"></i>
-                  Cancel
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-warning"
-                  onClick={() => handleUpdateTeamStatus('inactive')}
+                </Button>
+              ) : (
+                <Button
+                  variant="success"
+                  onClick={() => handleUpdateTeamStatus('active')}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
                     <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Deactivating...
+                      <Spinner animation="border" size="sm" className="me-2" />
+                      Activating...
                     </>
                   ) : (
                     <>
-                      <i className="bi bi-pause-circle me-2"></i>
-                      Deactivate Team
+                      <i className="bi bi-play-circle me-2"></i>
+                      Activate Team
                     </>
                   )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Delete Team Modal */}
-      {showDeleteModal && (
-        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header bg-danger text-white">
-                <h5 className="modal-title">
-                  <i className="bi bi-trash3 me-2"></i>
-                  Delete Team
-                </h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setConfirmDelete('');
-                  }}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="alert alert-danger">
-                  <h6>
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    Warning: This action cannot be undone!
-                  </h6>
-                  <p className="mb-0">
-                    Deleting your team will permanently remove all associated data, including:
+                </Button>
+              )}
+            </Card.Body>
+          </Card>
+        </Tab>
+        
+        <Tab eventKey="permissions" title="Permissions">
+          <TeamPermissionSettings 
+            team={team}
+            refreshTeam={refreshTeam}
+            setSuccessMessage={setSuccessMessage}
+            setError={setError}
+          />
+        </Tab>
+        
+        <Tab eventKey="danger" title="Danger Zone">
+          <Card className="border-danger">
+            <Card.Header className="bg-danger text-white">
+              <h5 className="mb-0">
+                <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                Danger Zone
+              </h5>
+            </Card.Header>
+            <Card.Body>
+              <p className="text-danger fw-bold">Warning: These actions cannot be undone!</p>
+              
+              <div className="d-flex justify-content-between align-items-center">
+                <div>
+                  <h6>Delete Team</h6>
+                  <p className="text-muted mb-0">
+                    Permanently delete this team and all associated data. All activities and expeditions will be removed.
                   </p>
                 </div>
-                <ul>
-                  <li>All team activities and expeditions</li>
-                  <li>All member associations</li>
-                  <li>All reservations and bookings</li>
-                </ul>
-                <p>
-                  To confirm, please type <strong>{team.team_name}</strong> in the field below:
-                </p>
-                <input
-                  type="text"
-                  className={`form-control ${confirmDelete === team.team_name ? 'is-valid' : 'is-invalid'}`}
-                  placeholder={`Type "${team.team_name}" to confirm`}
-                  value={confirmDelete}
-                  onChange={(e) => setConfirmDelete(e.target.value)}
-                />
-                {confirmDelete !== team.team_name && confirmDelete !== '' && (
-                  <div className="invalid-feedback d-block">
-                    Text does not match team name exactly.
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setConfirmDelete('');
-                  }}
-                  disabled={isSubmitting}
+                <Button
+                  variant="outline-danger"
+                  onClick={() => setShowDeleteModal(true)}
                 >
-                  <i className="bi bi-x-circle me-2"></i>
-                  Cancel
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-danger"
-                  onClick={handleDeleteTeam}
-                  disabled={isSubmitting || confirmDelete !== team.team_name}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Deleting...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-trash3 me-2"></i>
-                      Delete Team Permanently
-                    </>
-                  )}
-                </button>
+                  <i className="bi bi-trash3 me-2"></i>
+                  Delete Team
+                </Button>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </Card.Body>
+          </Card>
+        </Tab>
+      </Tabs>
+      
+      {/* Deactivate Team Modal */}
+      <Modal show={showDeactivateModal} onHide={() => setShowDeactivateModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-pause-circle me-2"></i>
+            Deactivate Team
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="warning">
+            <i className="bi bi-info-circle-fill me-2"></i>
+            Are you sure you want to deactivate your team?
+          </Alert>
+          <p>While deactivated:</p>
+          <ul>
+            <li>Your team's activities and expeditions will be hidden from explorers</li>
+            <li>Team members will still have access to the team dashboard</li>
+            <li>You can reactivate the team at any time</li>
+          </ul>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary"
+            onClick={() => setShowDeactivateModal(false)}
+            disabled={isSubmitting}
+          >
+            <i className="bi bi-x-circle me-2"></i>
+            Cancel
+          </Button>
+          <Button 
+            variant="warning"
+            onClick={() => handleUpdateTeamStatus('inactive')}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Deactivating...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-pause-circle me-2"></i>
+                Deactivate Team
+              </>
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      
+      {/* Delete Team Modal */}
+      <Modal show={showDeleteModal} onHide={() => {
+        setShowDeleteModal(false);
+        setConfirmDelete('');
+      }}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-trash3 me-2"></i>
+            Delete Team
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="danger">
+            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+            This action is irreversible! Deleting your team will permanently remove all associated data including activities, expeditions, and team members.
+          </Alert>
+          <p>Please type <strong>DELETE</strong> in the box below to confirm:</p>
+          <Form.Control 
+            type="text" 
+            value={confirmDelete} 
+            onChange={(e) => setConfirmDelete(e.target.value)} 
+            placeholder="Type DELETE to confirm" 
+            isInvalid={confirmDelete && confirmDelete !== 'DELETE'}
+          />
+          <Form.Control.Feedback type="invalid">
+            You must type DELETE exactly to confirm.
+          </Form.Control.Feedback>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary" 
+            onClick={() => {
+              setShowDeleteModal(false);
+              setConfirmDelete('');
+            }}
+            disabled={isSubmitting}
+          >
+            <i className="bi bi-x-circle me-2"></i>
+            Cancel
+          </Button>
+          <Button 
+            variant="danger"
+            onClick={handleDeleteTeam}
+            disabled={confirmDelete !== 'DELETE' || isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-trash3-fill me-2"></i>
+                Confirm Delete
+              </>
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

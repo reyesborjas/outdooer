@@ -30,6 +30,7 @@ import TeamInvitationsTab from './components/team/TeamInvitationsTab';
 import TeamExpeditionsTab from './components/team/TeamExpeditionsTab';
 import TeamActivitiesTab from './components/team/TeamActivitiesTab';
 import TeamMembersTab from './components/team/TeamMembersTab';
+import TeamPermissionSettings from './components/team/TeamPermissionSettings';
 
 const Router = () => {
   return (
@@ -59,37 +60,141 @@ const Router = () => {
         <Route path="/my-trips" element={<div>My Trips (Coming Soon)</div>} />
       </Route>
       
-      {/* Guide routes */}
+      {/* Guide routes with permission checks */}
       <Route element={<ProtectedRoute requiredRoles={['guide', 'master_guide']} />}>
         {/* Activity Management */}
-        <Route path="/create-activity" element={<NewActivity />} />
-        <Route path="/activities/:activityId/edit" element={<EditActivity />} />
-        <Route path="/activities/:activityId/dates" element={<ActivityDates />} />
         <Route path="/my-activities" element={<MyActivities />} />
-        
-        {/* Expedition Management */}
-        <Route path="/create-expedition" element={<NewExpedition />} />
-        <Route path="/expeditions/:expeditionId/edit" element={<EditExpedition />} />
-        <Route path="/expeditions/:expeditionId/participants" element={<ExpeditionParticipants />} />
+      </Route>
+      
+      {/* Create Activity (requires create_activity permission) */}
+      <Route 
+        element={
+          <ProtectedRoute 
+            requiredRoles={['guide', 'master_guide']} 
+            requiredPermission="create_activity"
+          />
+        }
+      >
+        <Route path="/create-activity" element={<NewActivity />} />
+      </Route>
+      
+      {/* Edit Activity (requires update_activity permission) */}
+      <Route 
+        element={
+          <ProtectedRoute 
+            requiredRoles={['guide', 'master_guide']} 
+            requiredPermission="update_activity"
+            resourceIdParam="activityId"
+          />
+        }
+      >
+        <Route path="/activities/:activityId/edit" element={<EditActivity />} />
+      </Route>
+      
+      {/* Manage Activity Dates (requires update_activity permission) */}
+      <Route 
+        element={
+          <ProtectedRoute 
+            requiredRoles={['guide', 'master_guide']} 
+            requiredPermission="update_activity"
+            resourceIdParam="activityId"
+          />
+        }
+      >
+        <Route path="/activities/:activityId/dates" element={<ActivityDates />} />
+      </Route>
+      
+      {/* Expedition Management */}
+      <Route element={<ProtectedRoute requiredRoles={['guide', 'master_guide']} />}>
         <Route path="/my-expeditions" element={<MyExpeditions />} />
       </Route>
       
-      {/* Master Guide routes */}
-      <Route element={<ProtectedRoute requiredRoles={['master_guide']} />}>
+      {/* Create Expedition (requires create_expedition permission) */}
+      <Route 
+        element={
+          <ProtectedRoute 
+            requiredRoles={['guide', 'master_guide']} 
+            requiredPermission="create_expedition"
+          />
+        }
+      >
+        <Route path="/create-expedition" element={<NewExpedition />} />
+      </Route>
+      
+      {/* Edit Expedition (requires update_expedition permission) */}
+      <Route 
+        element={
+          <ProtectedRoute 
+            requiredRoles={['guide', 'master_guide']} 
+            requiredPermission="update_expedition"
+            resourceIdParam="expeditionId"
+          />
+        }
+      >
+        <Route path="/expeditions/:expeditionId/edit" element={<EditExpedition />} />
+      </Route>
+      
+      {/* Manage Expedition Participants (requires update_expedition permission) */}
+      <Route 
+        element={
+          <ProtectedRoute 
+            requiredRoles={['guide', 'master_guide']} 
+            requiredPermission="update_expedition"
+            resourceIdParam="expeditionId"
+          />
+        }
+      >
+        <Route path="/expeditions/:expeditionId/participants" element={<ExpeditionParticipants />} />
+      </Route>
+      
+      {/* Team Management (requires master_guide or tactical_guide role) */}
+      <Route element={<ProtectedRoute requiredRoles={['guide']} requiredLevel={2} />}>
         <Route path="/team-management" element={<TeamManagement />} />
         <Route path="/team-management/:teamId" element={<TeamManagement />} />
         <Route path="/team-dashboard" element={<TeamDashboard />} />
         <Route path="/team-dashboard/:teamId" element={<TeamDashboard />} />
-        
-        {/* Team-related specific routes */}
-        <Route path="/team-management/:teamId" element={<TeamInvitationsTab />} />
+      </Route>
+      
+      {/* Team Management specific tabs (require specific permissions) */}
+      <Route 
+        element={
+          <ProtectedRoute 
+            requiredRoles={['guide']} 
+            requiredPermission="create_invitation"
+            teamIdParam="teamId"
+          />
+        }
+      >
+        <Route path="/team-management/:teamId/invitations" element={<TeamInvitationsTab />} />
+      </Route>
+      
+      <Route 
+        element={
+          <ProtectedRoute 
+            requiredRoles={['guide']} 
+            requiredPermission="manage_team_members"
+            teamIdParam="teamId"
+          />
+        }
+      >
         <Route path="/team-management/:teamId/members" element={<TeamMembersTab />} />
+      </Route>
+      
+      <Route 
+        element={
+          <ProtectedRoute 
+            requiredRoles={['guide']} 
+            requiredLevel={1}
+            teamIdParam="teamId"
+          />
+        }
+      >
+        <Route path="/team-management/:teamId/permissions" element={<TeamPermissionSettings />} />
+      </Route>
+      
+      <Route element={<ProtectedRoute requiredRoles={['guide']} />}>
         <Route path="/team-management/:teamId/activities" element={<TeamActivitiesTab />} />
         <Route path="/team-management/:teamId/expeditions" element={<TeamExpeditionsTab />} />
-        
-        {/* Admin-like routes for Master Guide */}
-        <Route path="/earnings" element={<div>Earnings (Coming Soon)</div>} />
-        <Route path="/team-reports" element={<div>Team Reports (Coming Soon)</div>} />
       </Route>
       
       {/* Admin routes */}
