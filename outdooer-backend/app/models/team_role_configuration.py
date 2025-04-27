@@ -17,6 +17,7 @@ class TeamRoleConfiguration(db.Model):
     # Add unique constraint to prevent duplicates
     __table_args__ = (
         db.UniqueConstraint('role_level', 'operation', name='uq_role_operation'),
+        {'extend_existing': True}
     )
     
     def to_dict(self):

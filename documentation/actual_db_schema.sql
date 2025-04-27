@@ -3,6 +3,288 @@
 BEGIN;
 
 
+ALTER TABLE IF EXISTS public.activities DROP CONSTRAINT IF EXISTS activities_activity_type_id_fkey;
+
+ALTER TABLE IF EXISTS public.activities DROP CONSTRAINT IF EXISTS activities_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.activities DROP CONSTRAINT IF EXISTS activities_leader_id_fkey;
+
+ALTER TABLE IF EXISTS public.activities DROP CONSTRAINT IF EXISTS activities_location_id_fkey;
+
+ALTER TABLE IF EXISTS public.activities DROP CONSTRAINT IF EXISTS activities_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.activity_available_date DROP CONSTRAINT IF EXISTS activity_available_date_activity_instance_id_fkey;
+
+ALTER TABLE IF EXISTS public.activity_resources DROP CONSTRAINT IF EXISTS activity_resources_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.activity_resources DROP CONSTRAINT IF EXISTS activity_resources_resource_id_fkey;
+
+ALTER TABLE IF EXISTS public.activitylocations DROP CONSTRAINT IF EXISTS activitylocations_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.activitylocations DROP CONSTRAINT IF EXISTS activitylocations_location_id_fkey;
+
+ALTER TABLE IF EXISTS public.activityresources DROP CONSTRAINT IF EXISTS activityresources_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.activityresources DROP CONSTRAINT IF EXISTS activityresources_resource_id_fkey;
+
+ALTER TABLE IF EXISTS public.activityroutes DROP CONSTRAINT IF EXISTS activityroutes_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.activityroutes DROP CONSTRAINT IF EXISTS activityroutes_route_id_fkey;
+
+ALTER TABLE IF EXISTS public.auditlogs DROP CONSTRAINT IF EXISTS auditlogs_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.certifications DROP CONSTRAINT IF EXISTS certifications_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.committeeroles DROP CONSTRAINT IF EXISTS committeeroles_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.communications DROP CONSTRAINT IF EXISTS communications_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.communications DROP CONSTRAINT IF EXISTS communications_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.communications DROP CONSTRAINT IF EXISTS communications_recipient_id_fkey;
+
+ALTER TABLE IF EXISTS public.communications DROP CONSTRAINT IF EXISTS communications_sender_id_fkey;
+
+ALTER TABLE IF EXISTS public.communications DROP CONSTRAINT IF EXISTS communications_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.disputeresolutiontemplates DROP CONSTRAINT IF EXISTS disputeresolutiontemplates_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.disputeresponses DROP CONSTRAINT IF EXISTS disputeresponses_dispute_id_fkey;
+
+ALTER TABLE IF EXISTS public.disputeresponses DROP CONSTRAINT IF EXISTS disputeresponses_responder_id_fkey;
+
+ALTER TABLE IF EXISTS public.earningssummaries DROP CONSTRAINT IF EXISTS earningssummaries_guide_id_fkey;
+
+ALTER TABLE IF EXISTS public.earningssummaries DROP CONSTRAINT IF EXISTS earningssummaries_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.enforcementactions DROP CONSTRAINT IF EXISTS enforcementactions_committee_member_id_fkey;
+
+ALTER TABLE IF EXISTS public.enforcementactions DROP CONSTRAINT IF EXISTS enforcementactions_reported_issue_id_fkey;
+
+ALTER TABLE IF EXISTS public.enforcementactions DROP CONSTRAINT IF EXISTS enforcementactions_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.enforcementactions DROP CONSTRAINT IF EXISTS enforcementactions_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.eventrefundpolicies DROP CONSTRAINT IF EXISTS eventrefundpolicies_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.eventrefundpolicies DROP CONSTRAINT IF EXISTS eventrefundpolicies_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.eventrefundpolicies DROP CONSTRAINT IF EXISTS eventrefundpolicies_policy_id_fkey;
+
+ALTER TABLE IF EXISTS public.expeditionactivities DROP CONSTRAINT IF EXISTS expeditionactivities_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.expeditionactivities DROP CONSTRAINT IF EXISTS expeditionactivities_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.expeditionlocations DROP CONSTRAINT IF EXISTS expeditionlocations_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.expeditionlocations DROP CONSTRAINT IF EXISTS expeditionlocations_location_id_fkey;
+
+ALTER TABLE IF EXISTS public.expeditionresources DROP CONSTRAINT IF EXISTS expeditionresources_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.expeditionresources DROP CONSTRAINT IF EXISTS expeditionresources_resource_id_fkey;
+
+ALTER TABLE IF EXISTS public.expeditionroutes DROP CONSTRAINT IF EXISTS expeditionroutes_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.expeditions DROP CONSTRAINT IF EXISTS expeditions_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.expeditions DROP CONSTRAINT IF EXISTS expeditions_leader_id_fkey;
+
+ALTER TABLE IF EXISTS public.expeditions DROP CONSTRAINT IF EXISTS expeditions_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.guide_activity_instance DROP CONSTRAINT IF EXISTS guide_activity_instance_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.guide_activity_instance DROP CONSTRAINT IF EXISTS guide_activity_instance_guide_id_fkey;
+
+ALTER TABLE IF EXISTS public.guide_activity_instance DROP CONSTRAINT IF EXISTS guide_activity_instance_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideearnings DROP CONSTRAINT IF EXISTS guideearnings_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideearnings DROP CONSTRAINT IF EXISTS guideearnings_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideearnings DROP CONSTRAINT IF EXISTS guideearnings_guide_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideearnings DROP CONSTRAINT IF EXISTS guideearnings_payment_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideearnings DROP CONSTRAINT IF EXISTS guideearnings_reservation_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideearnings DROP CONSTRAINT IF EXISTS guideearnings_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.guidemetrics DROP CONSTRAINT IF EXISTS guidemetrics_guide_id_fkey;
+
+ALTER TABLE IF EXISTS public.guidepayoutdetails DROP CONSTRAINT IF EXISTS guidepayoutdetails_earning_id_fkey;
+
+ALTER TABLE IF EXISTS public.guidepayoutdetails DROP CONSTRAINT IF EXISTS guidepayoutdetails_payout_id_fkey;
+
+ALTER TABLE IF EXISTS public.guidepayouts DROP CONSTRAINT IF EXISTS guidepayouts_guide_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideratings DROP CONSTRAINT IF EXISTS guideratings_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideratings DROP CONSTRAINT IF EXISTS guideratings_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideratings DROP CONSTRAINT IF EXISTS guideratings_guide_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideratings DROP CONSTRAINT IF EXISTS guideratings_reservation_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideregistrationrequests DROP CONSTRAINT IF EXISTS guideregistrationrequests_responded_by_fkey;
+
+ALTER TABLE IF EXISTS public.guideregistrationrequests DROP CONSTRAINT IF EXISTS guideregistrationrequests_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.guideregistrationrequests DROP CONSTRAINT IF EXISTS guideregistrationrequests_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.invitation_codes DROP CONSTRAINT IF EXISTS invitation_codes_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.invitation_codes DROP CONSTRAINT IF EXISTS invitation_codes_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.invitation_usages DROP CONSTRAINT IF EXISTS invitation_usages_code_id_fkey;
+
+ALTER TABLE IF EXISTS public.invitation_usages DROP CONSTRAINT IF EXISTS invitation_usages_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.location_aliases DROP CONSTRAINT IF EXISTS location_aliases_location_id_fkey;
+
+ALTER TABLE IF EXISTS public.locationfeatures DROP CONSTRAINT IF EXISTS locationfeatures_location_id_fkey;
+
+ALTER TABLE IF EXISTS public.locationfeatures DROP CONSTRAINT IF EXISTS locationfeatures_verified_by_fkey;
+
+ALTER TABLE IF EXISTS public.locations DROP CONSTRAINT IF EXISTS locations_parent_location_id_fkey;
+
+ALTER TABLE IF EXISTS public.master_guide_activity_monitor DROP CONSTRAINT IF EXISTS masterguideactivitymonitor_master_guide_id_fkey;
+
+ALTER TABLE IF EXISTS public.master_guide_activity_monitor DROP CONSTRAINT IF EXISTS masterguideactivitymonitor_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.micrositecontentsections DROP CONSTRAINT IF EXISTS micrositecontentsections_microsite_id_fkey;
+
+ALTER TABLE IF EXISTS public.micrositeposts DROP CONSTRAINT IF EXISTS micrositeposts_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.micrositeposts DROP CONSTRAINT IF EXISTS micrositeposts_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.micrositeposts DROP CONSTRAINT IF EXISTS micrositeposts_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.micrositeposts DROP CONSTRAINT IF EXISTS micrositeposts_microsite_id_fkey;
+
+ALTER TABLE IF EXISTS public.new_feature DROP CONSTRAINT IF EXISTS new_feature_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.paymentdisputes DROP CONSTRAINT IF EXISTS paymentdisputes_assigned_to_fkey;
+
+ALTER TABLE IF EXISTS public.paymentdisputes DROP CONSTRAINT IF EXISTS paymentdisputes_payment_id_fkey;
+
+ALTER TABLE IF EXISTS public.paymentdisputes DROP CONSTRAINT IF EXISTS paymentdisputes_reservation_id_fkey;
+
+ALTER TABLE IF EXISTS public.paymentdisputes DROP CONSTRAINT IF EXISTS paymentdisputes_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.payments DROP CONSTRAINT IF EXISTS payments_refund_initiated_by_fkey;
+
+ALTER TABLE IF EXISTS public.payments DROP CONSTRAINT IF EXISTS payments_reservation_id_fkey;
+
+ALTER TABLE IF EXISTS public.postcomments DROP CONSTRAINT IF EXISTS postcomments_parent_comment_id_fkey;
+
+ALTER TABLE IF EXISTS public.postcomments DROP CONSTRAINT IF EXISTS postcomments_post_id_fkey;
+
+ALTER TABLE IF EXISTS public.postcomments DROP CONSTRAINT IF EXISTS postcomments_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.posthashtags DROP CONSTRAINT IF EXISTS posthashtags_hashtag_id_fkey;
+
+ALTER TABLE IF EXISTS public.posthashtags DROP CONSTRAINT IF EXISTS posthashtags_post_id_fkey;
+
+ALTER TABLE IF EXISTS public.postimages DROP CONSTRAINT IF EXISTS postimages_post_id_fkey;
+
+ALTER TABLE IF EXISTS public.postinteractions DROP CONSTRAINT IF EXISTS postinteractions_post_id_fkey;
+
+ALTER TABLE IF EXISTS public.postinteractions DROP CONSTRAINT IF EXISTS postinteractions_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.profilevisibilitysettings DROP CONSTRAINT IF EXISTS profilevisibilitysettings_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.refundpolicies DROP CONSTRAINT IF EXISTS refundpolicies_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.refundpolicies DROP CONSTRAINT IF EXISTS refundpolicies_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.reportedissues DROP CONSTRAINT IF EXISTS reportedissues_assigned_to_fkey;
+
+ALTER TABLE IF EXISTS public.reportedissues DROP CONSTRAINT IF EXISTS reportedissues_related_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.reportedissues DROP CONSTRAINT IF EXISTS reportedissues_related_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.reportedissues DROP CONSTRAINT IF EXISTS reportedissues_reported_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.reportedissues DROP CONSTRAINT IF EXISTS reportedissues_reported_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.reportedissues DROP CONSTRAINT IF EXISTS reportedissues_reporter_id_fkey;
+
+ALTER TABLE IF EXISTS public.reservationparticipants DROP CONSTRAINT IF EXISTS reservationparticipants_reservation_id_fkey;
+
+ALTER TABLE IF EXISTS public.reservationparticipants DROP CONSTRAINT IF EXISTS reservationparticipants_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.reservations DROP CONSTRAINT IF EXISTS reservations_activity_id_fkey;
+
+ALTER TABLE IF EXISTS public.reservations DROP CONSTRAINT IF EXISTS reservations_expedition_id_fkey;
+
+ALTER TABLE IF EXISTS public.reservations DROP CONSTRAINT IF EXISTS reservations_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.resource_categories DROP CONSTRAINT IF EXISTS resource_categories_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.resource_categories DROP CONSTRAINT IF EXISTS resource_categories_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.resourcecategories DROP CONSTRAINT IF EXISTS resourcecategories_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.resourcecategories DROP CONSTRAINT IF EXISTS resourcecategories_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.resources DROP CONSTRAINT IF EXISTS resources_category_id_fkey;
+
+ALTER TABLE IF EXISTS public.resources DROP CONSTRAINT IF EXISTS resources_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.resources DROP CONSTRAINT IF EXISTS resources_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.rolepermissions DROP CONSTRAINT IF EXISTS rolepermissions_modified_by_fkey;
+
+ALTER TABLE IF EXISTS public.rolepermissions DROP CONSTRAINT IF EXISTS rolepermissions_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.routes DROP CONSTRAINT IF EXISTS routes_created_by_fkey;
+
+ALTER TABLE IF EXISTS public.routes DROP CONSTRAINT IF EXISTS routes_end_location_id_fkey;
+
+ALTER TABLE IF EXISTS public.routes DROP CONSTRAINT IF EXISTS routes_start_location_id_fkey;
+
+ALTER TABLE IF EXISTS public.team_invitations DROP CONSTRAINT IF EXISTS fk_invited_by;
+
+ALTER TABLE IF EXISTS public.team_invitations DROP CONSTRAINT IF EXISTS fk_team;
+
+ALTER TABLE IF EXISTS public.team_members DROP CONSTRAINT IF EXISTS team_members_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.team_members DROP CONSTRAINT IF EXISTS team_members_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.team_revenue_sharing DROP CONSTRAINT IF EXISTS team_revenue_sharing_modified_by_fkey;
+
+ALTER TABLE IF EXISTS public.team_revenue_sharing DROP CONSTRAINT IF EXISTS team_revenue_sharing_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.team_role_configurations DROP CONSTRAINT IF EXISTS team_role_configurations_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.team_role_permissions DROP CONSTRAINT IF EXISTS team_role_permissions_modified_by_fkey;
+
+ALTER TABLE IF EXISTS public.team_role_permissions DROP CONSTRAINT IF EXISTS team_role_permissions_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.team_settings_audit_logs DROP CONSTRAINT IF EXISTS team_settings_audit_logs_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.team_settings_audit_logs DROP CONSTRAINT IF EXISTS team_settings_audit_logs_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.teammetrics DROP CONSTRAINT IF EXISTS teammetrics_limit_approved_by_fkey;
+
+ALTER TABLE IF EXISTS public.teammetrics DROP CONSTRAINT IF EXISTS teammetrics_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.teammicrosites DROP CONSTRAINT IF EXISTS teammicrosites_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.teamrevenuesharing DROP CONSTRAINT IF EXISTS teamrevenuesharing_modified_by_fkey;
+
+ALTER TABLE IF EXISTS public.teamrevenuesharing DROP CONSTRAINT IF EXISTS teamrevenuesharing_team_id_fkey;
+
+ALTER TABLE IF EXISTS public.teams DROP CONSTRAINT IF EXISTS teams_master_guide_id_fkey;
+
+ALTER TABLE IF EXISTS public.user_roles DROP CONSTRAINT IF EXISTS user_roles_user_id_fkey;
+
+ALTER TABLE IF EXISTS public.useractivitylogs DROP CONSTRAINT IF EXISTS useractivitylogs_user_id_fkey;
+
+
+
+DROP TABLE IF EXISTS public.activities;
+
 CREATE TABLE IF NOT EXISTS public.activities
 (
     activity_id serial NOT NULL,
@@ -20,10 +302,42 @@ CREATE TABLE IF NOT EXISTS public.activities
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     activity_status character varying(20) COLLATE pg_catalog."default" DEFAULT 'active'::character varying,
     activity_type_id integer,
+    act_cover_image_url text COLLATE pg_catalog."default",
     CONSTRAINT activities_pkey PRIMARY KEY (activity_id),
     CONSTRAINT unique_activity_title UNIQUE (title),
     CONSTRAINT unique_activity_title_per_team UNIQUE (team_id, title)
 );
+
+DROP TABLE IF EXISTS public.activity_available_date;
+
+CREATE TABLE IF NOT EXISTS public.activity_available_date
+(
+    available_date_id serial NOT NULL,
+    activity_instance_id integer NOT NULL,
+    date date NOT NULL,
+    start_time time without time zone NOT NULL,
+    end_time time without time zone NOT NULL,
+    max_reservations integer DEFAULT 10,
+    location character varying(255) COLLATE pg_catalog."default",
+    status character varying(20) COLLATE pg_catalog."default" DEFAULT 'open'::character varying,
+    current_reservations numeric,
+    CONSTRAINT activity_available_date_pkey PRIMARY KEY (available_date_id)
+);
+
+DROP TABLE IF EXISTS public.activity_resources;
+
+CREATE TABLE IF NOT EXISTS public.activity_resources
+(
+    activity_resource_id serial NOT NULL,
+    activity_id integer NOT NULL,
+    resource_id integer NOT NULL,
+    quantity_required integer NOT NULL,
+    notes text COLLATE pg_catalog."default",
+    created_at timestamp without time zone,
+    CONSTRAINT activity_resources_pkey PRIMARY KEY (activity_resource_id)
+);
+
+DROP TABLE IF EXISTS public.activity_types;
 
 CREATE TABLE IF NOT EXISTS public.activity_types
 (
@@ -35,6 +349,8 @@ CREATE TABLE IF NOT EXISTS public.activity_types
     CONSTRAINT activity_types_pkey PRIMARY KEY (activity_type_id),
     CONSTRAINT activity_types_activity_type_name_key UNIQUE (activity_type_name)
 );
+
+DROP TABLE IF EXISTS public.activitylocations;
 
 CREATE TABLE IF NOT EXISTS public.activitylocations
 (
@@ -52,6 +368,8 @@ CREATE TABLE IF NOT EXISTS public.activitylocations
     CONSTRAINT activitylocations_pkey PRIMARY KEY (activity_location_id)
 );
 
+DROP TABLE IF EXISTS public.activityresources;
+
 CREATE TABLE IF NOT EXISTS public.activityresources
 (
     activity_resource_id serial NOT NULL,
@@ -62,6 +380,8 @@ CREATE TABLE IF NOT EXISTS public.activityresources
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT activityresources_pkey PRIMARY KEY (activity_resource_id)
 );
+
+DROP TABLE IF EXISTS public.activityroutes;
 
 CREATE TABLE IF NOT EXISTS public.activityroutes
 (
@@ -77,6 +397,8 @@ CREATE TABLE IF NOT EXISTS public.activityroutes
     CONSTRAINT activityroutes_pkey PRIMARY KEY (activity_route_id)
 );
 
+DROP TABLE IF EXISTS public.auditlogs;
+
 CREATE TABLE IF NOT EXISTS public.auditlogs
 (
     log_id serial NOT NULL,
@@ -90,6 +412,8 @@ CREATE TABLE IF NOT EXISTS public.auditlogs
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT auditlogs_pkey PRIMARY KEY (log_id)
 );
+
+DROP TABLE IF EXISTS public.certifications;
 
 CREATE TABLE IF NOT EXISTS public.certifications
 (
@@ -106,6 +430,8 @@ CREATE TABLE IF NOT EXISTS public.certifications
     CONSTRAINT certifications_pkey PRIMARY KEY (certification_id)
 );
 
+DROP TABLE IF EXISTS public.committeeroles;
+
 CREATE TABLE IF NOT EXISTS public.committeeroles
 (
     committee_role_id serial NOT NULL,
@@ -116,6 +442,8 @@ CREATE TABLE IF NOT EXISTS public.committeeroles
     CONSTRAINT committeeroles_pkey PRIMARY KEY (committee_role_id),
     CONSTRAINT committeeroles_user_id_key UNIQUE (user_id)
 );
+
+DROP TABLE IF EXISTS public.communications;
 
 CREATE TABLE IF NOT EXISTS public.communications
 (
@@ -133,6 +461,8 @@ CREATE TABLE IF NOT EXISTS public.communications
     CONSTRAINT communications_pkey PRIMARY KEY (communication_id)
 );
 
+DROP TABLE IF EXISTS public.disputeresolutiontemplates;
+
 CREATE TABLE IF NOT EXISTS public.disputeresolutiontemplates
 (
     template_id serial NOT NULL,
@@ -148,6 +478,8 @@ CREATE TABLE IF NOT EXISTS public.disputeresolutiontemplates
     CONSTRAINT disputeresolutiontemplates_pkey PRIMARY KEY (template_id)
 );
 
+DROP TABLE IF EXISTS public.disputeresponses;
+
 CREATE TABLE IF NOT EXISTS public.disputeresponses
 (
     response_id serial NOT NULL,
@@ -160,6 +492,8 @@ CREATE TABLE IF NOT EXISTS public.disputeresponses
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT disputeresponses_pkey PRIMARY KEY (response_id)
 );
+
+DROP TABLE IF EXISTS public.earningssummaries;
 
 CREATE TABLE IF NOT EXISTS public.earningssummaries
 (
@@ -179,6 +513,8 @@ CREATE TABLE IF NOT EXISTS public.earningssummaries
     CONSTRAINT earningssummaries_pkey PRIMARY KEY (summary_id),
     CONSTRAINT earningssummaries_guide_id_team_id_year_month_key UNIQUE (guide_id, team_id, year, month)
 );
+
+DROP TABLE IF EXISTS public.enforcementactions;
 
 CREATE TABLE IF NOT EXISTS public.enforcementactions
 (
@@ -201,6 +537,8 @@ CREATE TABLE IF NOT EXISTS public.enforcementactions
     CONSTRAINT enforcementactions_pkey PRIMARY KEY (action_id)
 );
 
+DROP TABLE IF EXISTS public.eventrefundpolicies;
+
 CREATE TABLE IF NOT EXISTS public.eventrefundpolicies
 (
     event_policy_id serial NOT NULL,
@@ -211,6 +549,8 @@ CREATE TABLE IF NOT EXISTS public.eventrefundpolicies
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT eventrefundpolicies_pkey PRIMARY KEY (event_policy_id)
 );
+
+DROP TABLE IF EXISTS public.expeditionactivities;
 
 CREATE TABLE IF NOT EXISTS public.expeditionactivities
 (
@@ -229,6 +569,8 @@ CREATE TABLE IF NOT EXISTS public.expeditionactivities
     CONSTRAINT expeditionactivities_expedition_id_activity_id_key UNIQUE (expedition_id, activity_id)
 );
 
+DROP TABLE IF EXISTS public.expeditionlocations;
+
 CREATE TABLE IF NOT EXISTS public.expeditionlocations
 (
     expedition_location_id serial NOT NULL,
@@ -246,6 +588,8 @@ CREATE TABLE IF NOT EXISTS public.expeditionlocations
     CONSTRAINT expeditionlocations_pkey PRIMARY KEY (expedition_location_id)
 );
 
+DROP TABLE IF EXISTS public.expeditionresources;
+
 CREATE TABLE IF NOT EXISTS public.expeditionresources
 (
     expedition_resource_id serial NOT NULL,
@@ -256,6 +600,8 @@ CREATE TABLE IF NOT EXISTS public.expeditionresources
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT expeditionresources_pkey PRIMARY KEY (expedition_resource_id)
 );
+
+DROP TABLE IF EXISTS public.expeditionroutes;
 
 CREATE TABLE IF NOT EXISTS public.expeditionroutes
 (
@@ -273,6 +619,8 @@ CREATE TABLE IF NOT EXISTS public.expeditionroutes
     CONSTRAINT expeditionroutes_expedition_id_key UNIQUE (expedition_id)
 );
 
+DROP TABLE IF EXISTS public.expeditions;
+
 CREATE TABLE IF NOT EXISTS public.expeditions
 (
     expedition_id serial NOT NULL,
@@ -289,8 +637,24 @@ CREATE TABLE IF NOT EXISTS public.expeditions
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     expedition_status character varying(20) COLLATE pg_catalog."default" DEFAULT 'active'::character varying,
+    exp_cover_image_url text COLLATE pg_catalog."default",
     CONSTRAINT expeditions_pkey PRIMARY KEY (expedition_id)
 );
+
+DROP TABLE IF EXISTS public.guide_activity_instance;
+
+CREATE TABLE IF NOT EXISTS public.guide_activity_instance
+(
+    instance_id serial NOT NULL,
+    guide_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    team_id integer,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT guide_activity_instance_pkey PRIMARY KEY (instance_id)
+);
+
+DROP TABLE IF EXISTS public.guideearnings;
 
 CREATE TABLE IF NOT EXISTS public.guideearnings
 (
@@ -310,6 +674,8 @@ CREATE TABLE IF NOT EXISTS public.guideearnings
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT guideearnings_pkey PRIMARY KEY (earning_id)
 );
+
+DROP TABLE IF EXISTS public.guidemetrics;
 
 CREATE TABLE IF NOT EXISTS public.guidemetrics
 (
@@ -337,6 +703,8 @@ END) STORED,
     CONSTRAINT guidemetrics_guide_id_key UNIQUE (guide_id)
 );
 
+DROP TABLE IF EXISTS public.guidepayoutdetails;
+
 CREATE TABLE IF NOT EXISTS public.guidepayoutdetails
 (
     detail_id serial NOT NULL,
@@ -346,6 +714,8 @@ CREATE TABLE IF NOT EXISTS public.guidepayoutdetails
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT guidepayoutdetails_pkey PRIMARY KEY (detail_id)
 );
+
+DROP TABLE IF EXISTS public.guidepayouts;
 
 CREATE TABLE IF NOT EXISTS public.guidepayouts
 (
@@ -362,6 +732,8 @@ CREATE TABLE IF NOT EXISTS public.guidepayouts
     CONSTRAINT guidepayouts_pkey PRIMARY KEY (payout_id)
 );
 
+DROP TABLE IF EXISTS public.guideratings;
+
 CREATE TABLE IF NOT EXISTS public.guideratings
 (
     rating_id serial NOT NULL,
@@ -375,6 +747,8 @@ CREATE TABLE IF NOT EXISTS public.guideratings
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT guideratings_pkey PRIMARY KEY (rating_id)
 );
+
+DROP TABLE IF EXISTS public.guideregistrationrequests;
 
 CREATE TABLE IF NOT EXISTS public.guideregistrationrequests
 (
@@ -392,6 +766,8 @@ CREATE TABLE IF NOT EXISTS public.guideregistrationrequests
     CONSTRAINT guideregistrationrequests_pkey PRIMARY KEY (request_id)
 );
 
+DROP TABLE IF EXISTS public.hashtags;
+
 CREATE TABLE IF NOT EXISTS public.hashtags
 (
     hashtag_id serial NOT NULL,
@@ -400,6 +776,8 @@ CREATE TABLE IF NOT EXISTS public.hashtags
     CONSTRAINT hashtags_pkey PRIMARY KEY (hashtag_id),
     CONSTRAINT hashtags_name_key UNIQUE (name)
 );
+
+DROP TABLE IF EXISTS public.invitation_codes;
 
 CREATE TABLE IF NOT EXISTS public.invitation_codes
 (
@@ -413,10 +791,12 @@ CREATE TABLE IF NOT EXISTS public.invitation_codes
     expires_at timestamp without time zone,
     is_active boolean DEFAULT true,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    metadata jsonb DEFAULT '{}'::jsonb,
+    metadata json,
     CONSTRAINT invitation_codes_pkey PRIMARY KEY (code_id),
     CONSTRAINT invitation_codes_code_key UNIQUE (code)
 );
+
+DROP TABLE IF EXISTS public.invitation_usages;
 
 CREATE TABLE IF NOT EXISTS public.invitation_usages
 (
@@ -427,88 +807,7 @@ CREATE TABLE IF NOT EXISTS public.invitation_usages
     CONSTRAINT invitation_usages_pkey PRIMARY KEY (usage_id)
 );
 
-CREATE TABLE team_invitations (
-    team_invitations_id SERIAL PRIMARY KEY,
-    team_id INTEGER NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    status VARCHAR(50) DEFAULT 'pending', -- pending, accepted, declined
-    invitation_code VARCHAR(100) UNIQUE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP WITH TIME ZONE,
-    invited_by_user_id INTEGER,
-
-    CONSTRAINT fk_team 
-        FOREIGN KEY(team_id) 
-        REFERENCES teams(team_id) 
-        ON DELETE CASCADE,
-    
-    CONSTRAINT fk_invited_by 
-        FOREIGN KEY(invited_by_user_id) 
-        REFERENCES users(user_id)
-        ON DELETE SET NULL,
-    
-    CONSTRAINT unique_team_email 
-        UNIQUE(team_id, email)
-);
-
--- Index for performance
-CREATE INDEX idx_team_invitations_team_id ON team_invitations(team_id);
-CREATE INDEX idx_team_invitations_email ON team_invitations(email);
-CREATE INDEX idx_team_invitations_status ON team_invitations(status);
-
--- Function to generate unique invitation code
-CREATE OR REPLACE FUNCTION generate_invitation_code() 
-RETURNS TEXT AS $$
-DECLARE
-    invitation_code TEXT;
-BEGIN
-    LOOP
-        -- Generate a random code (adjust length and complexity as needed)
-        invitation_code := LOWER(
-            REGEXP_REPLACE(
-                gen_salt('md5'), 
-                '[^a-z0-9]', 
-                '', 
-                'g'
-            )
-        );
-        
-        -- Truncate to desired length
-        invitation_code := SUBSTRING(invitation_code FROM 1 FOR 20);
-        
-        -- Check if code is unique
-        EXIT WHEN NOT EXISTS (
-            SELECT 1 FROM team_invitations 
-            WHERE invitation_code = invitation_code
-        );
-    END LOOP;
-    
-    RETURN invitation_code;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to auto-generate invitation code and set expiration
-CREATE OR REPLACE FUNCTION set_invitation_defaults()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- Generate unique invitation code if not provided
-    IF NEW.invitation_code IS NULL THEN
-        NEW.invitation_code := generate_invitation_code();
-    END IF;
-    
-    -- Set default expiration to 7 days from creation if not set
-    IF NEW.expires_at IS NULL THEN
-        NEW.expires_at := NEW.created_at + INTERVAL '7 days';
-    END IF;
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER set_invitation_defaults_trigger
-BEFORE INSERT ON team_invitations
-FOR EACH ROW
-EXECUTE FUNCTION set_invitation_defaults();
+DROP TABLE IF EXISTS public.location_aliases;
 
 CREATE TABLE IF NOT EXISTS public.location_aliases
 (
@@ -521,6 +820,7 @@ CREATE TABLE IF NOT EXISTS public.location_aliases
     CONSTRAINT location_aliases_pkey PRIMARY KEY (alias_id)
 );
 
+DROP TABLE IF EXISTS public.locationfeatures;
 
 CREATE TABLE IF NOT EXISTS public.locationfeatures
 (
@@ -541,6 +841,8 @@ CREATE TABLE IF NOT EXISTS public.locationfeatures
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT locationfeatures_pkey PRIMARY KEY (feature_id)
 );
+
+DROP TABLE IF EXISTS public.locations;
 
 CREATE TABLE IF NOT EXISTS public.locations
 (
@@ -563,6 +865,8 @@ CREATE TABLE IF NOT EXISTS public.locations
     CONSTRAINT locations_pkey PRIMARY KEY (location_id)
 );
 
+DROP TABLE IF EXISTS public.master_guide_activity_monitor;
+
 CREATE TABLE IF NOT EXISTS public.master_guide_activity_monitor
 (
     monitor_id integer NOT NULL DEFAULT nextval('masterguideactivitymonitor_monitor_id_seq'::regclass),
@@ -581,6 +885,8 @@ CREATE TABLE IF NOT EXISTS public.master_guide_activity_monitor
     CONSTRAINT masterguideactivitymonitor_master_guide_id_team_id_key UNIQUE (master_guide_id, team_id)
 );
 
+DROP TABLE IF EXISTS public.micrositecontentsections;
+
 CREATE TABLE IF NOT EXISTS public.micrositecontentsections
 (
     section_id serial NOT NULL,
@@ -593,6 +899,8 @@ CREATE TABLE IF NOT EXISTS public.micrositecontentsections
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT micrositecontentsections_pkey PRIMARY KEY (section_id)
 );
+
+DROP TABLE IF EXISTS public.micrositeposts;
 
 CREATE TABLE IF NOT EXISTS public.micrositeposts
 (
@@ -614,6 +922,8 @@ CREATE TABLE IF NOT EXISTS public.micrositeposts
     CONSTRAINT micrositeposts_pkey PRIMARY KEY (post_id)
 );
 
+DROP TABLE IF EXISTS public.new_feature;
+
 CREATE TABLE IF NOT EXISTS public.new_feature
 (
     id serial NOT NULL,
@@ -624,6 +934,8 @@ CREATE TABLE IF NOT EXISTS public.new_feature
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT new_feature_pkey PRIMARY KEY (id)
 );
+
+DROP TABLE IF EXISTS public.paymentdisputes;
 
 CREATE TABLE IF NOT EXISTS public.paymentdisputes
 (
@@ -649,6 +961,8 @@ CREATE TABLE IF NOT EXISTS public.paymentdisputes
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT paymentdisputes_pkey PRIMARY KEY (dispute_id)
 );
+
+DROP TABLE IF EXISTS public.payments;
 
 CREATE TABLE IF NOT EXISTS public.payments
 (
@@ -679,6 +993,8 @@ CREATE TABLE IF NOT EXISTS public.payments
     CONSTRAINT payments_transaction_id_key UNIQUE (transaction_id)
 );
 
+DROP TABLE IF EXISTS public.postcomments;
+
 CREATE TABLE IF NOT EXISTS public.postcomments
 (
     comment_id serial NOT NULL,
@@ -693,6 +1009,8 @@ CREATE TABLE IF NOT EXISTS public.postcomments
     CONSTRAINT postcomments_pkey PRIMARY KEY (comment_id)
 );
 
+DROP TABLE IF EXISTS public.posthashtags;
+
 CREATE TABLE IF NOT EXISTS public.posthashtags
 (
     post_hashtag_id serial NOT NULL,
@@ -702,6 +1020,8 @@ CREATE TABLE IF NOT EXISTS public.posthashtags
     CONSTRAINT posthashtags_pkey PRIMARY KEY (post_hashtag_id),
     CONSTRAINT posthashtags_post_id_hashtag_id_key UNIQUE (post_id, hashtag_id)
 );
+
+DROP TABLE IF EXISTS public.postimages;
 
 CREATE TABLE IF NOT EXISTS public.postimages
 (
@@ -717,6 +1037,8 @@ CREATE TABLE IF NOT EXISTS public.postimages
     CONSTRAINT postimages_post_id_display_order_key UNIQUE (post_id, display_order)
 );
 
+DROP TABLE IF EXISTS public.postinteractions;
+
 CREATE TABLE IF NOT EXISTS public.postinteractions
 (
     interaction_id serial NOT NULL,
@@ -727,6 +1049,8 @@ CREATE TABLE IF NOT EXISTS public.postinteractions
     CONSTRAINT postinteractions_pkey PRIMARY KEY (interaction_id),
     CONSTRAINT postinteractions_post_id_user_id_interaction_type_key UNIQUE (post_id, user_id, interaction_type)
 );
+
+DROP TABLE IF EXISTS public.profilevisibilitysettings;
 
 CREATE TABLE IF NOT EXISTS public.profilevisibilitysettings
 (
@@ -747,6 +1071,8 @@ CREATE TABLE IF NOT EXISTS public.profilevisibilitysettings
     CONSTRAINT profilevisibilitysettings_user_id_key UNIQUE (user_id)
 );
 
+DROP TABLE IF EXISTS public.refundpolicies;
+
 CREATE TABLE IF NOT EXISTS public.refundpolicies
 (
     policy_id serial NOT NULL,
@@ -765,6 +1091,8 @@ CREATE TABLE IF NOT EXISTS public.refundpolicies
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT refundpolicies_pkey PRIMARY KEY (policy_id)
 );
+
+DROP TABLE IF EXISTS public.reportedissues;
 
 CREATE TABLE IF NOT EXISTS public.reportedissues
 (
@@ -785,6 +1113,8 @@ CREATE TABLE IF NOT EXISTS public.reportedissues
     CONSTRAINT reportedissues_pkey PRIMARY KEY (issue_id)
 );
 
+DROP TABLE IF EXISTS public.reservationparticipants;
+
 CREATE TABLE IF NOT EXISTS public.reservationparticipants
 (
     participant_id serial NOT NULL,
@@ -797,6 +1127,8 @@ CREATE TABLE IF NOT EXISTS public.reservationparticipants
     emergency_contact_phone character varying(50) COLLATE pg_catalog."default",
     CONSTRAINT reservationparticipants_pkey PRIMARY KEY (participant_id)
 );
+
+DROP TABLE IF EXISTS public.reservations;
 
 CREATE TABLE IF NOT EXISTS public.reservations
 (
@@ -818,6 +1150,22 @@ CREATE TABLE IF NOT EXISTS public.reservations
     CONSTRAINT reservations_pkey PRIMARY KEY (reservation_id)
 );
 
+DROP TABLE IF EXISTS public.resource_categories;
+
+CREATE TABLE IF NOT EXISTS public.resource_categories
+(
+    category_id serial NOT NULL,
+    team_id integer,
+    category_name character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    description text COLLATE pg_catalog."default",
+    created_by integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    CONSTRAINT resource_categories_pkey PRIMARY KEY (category_id)
+);
+
+DROP TABLE IF EXISTS public.resourcecategories;
+
 CREATE TABLE IF NOT EXISTS public.resourcecategories
 (
     category_id serial NOT NULL,
@@ -830,6 +1178,8 @@ CREATE TABLE IF NOT EXISTS public.resourcecategories
     CONSTRAINT resourcecategories_pkey PRIMARY KEY (category_id),
     CONSTRAINT resourcecategories_team_id_category_name_key UNIQUE (team_id, category_name)
 );
+
+DROP TABLE IF EXISTS public.resources;
 
 CREATE TABLE IF NOT EXISTS public.resources
 (
@@ -846,6 +1196,8 @@ CREATE TABLE IF NOT EXISTS public.resources
     CONSTRAINT resources_pkey PRIMARY KEY (resource_id)
 );
 
+DROP TABLE IF EXISTS public.rolepermissions;
+
 CREATE TABLE IF NOT EXISTS public.rolepermissions
 (
     permission_id serial NOT NULL,
@@ -859,6 +1211,8 @@ CREATE TABLE IF NOT EXISTS public.rolepermissions
     CONSTRAINT rolepermissions_pkey PRIMARY KEY (permission_id),
     CONSTRAINT rolepermissions_team_id_role_level_permission_type_key UNIQUE (team_id, role_level, permission_type)
 );
+
+DROP TABLE IF EXISTS public.routes;
 
 CREATE TABLE IF NOT EXISTS public.routes
 (
@@ -881,6 +1235,25 @@ CREATE TABLE IF NOT EXISTS public.routes
     CONSTRAINT routes_pkey PRIMARY KEY (route_id)
 );
 
+DROP TABLE IF EXISTS public.team_invitations;
+
+CREATE TABLE IF NOT EXISTS public.team_invitations
+(
+    team_invitations_id serial NOT NULL,
+    team_id integer NOT NULL,
+    email character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    status character varying(50) COLLATE pg_catalog."default" DEFAULT 'pending'::character varying,
+    invitation_code character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    expires_at timestamp with time zone,
+    invited_by_user_id integer,
+    CONSTRAINT team_invitations_pkey PRIMARY KEY (team_invitations_id),
+    CONSTRAINT team_invitations_invitation_code_key UNIQUE (invitation_code),
+    CONSTRAINT unique_team_email UNIQUE (team_id, email)
+);
+
+DROP TABLE IF EXISTS public.team_members;
+
 CREATE TABLE IF NOT EXISTS public.team_members
 (
     team_member_id serial NOT NULL,
@@ -893,6 +1266,26 @@ CREATE TABLE IF NOT EXISTS public.team_members
     CONSTRAINT team_members_team_id_user_id_key UNIQUE (team_id, user_id)
 );
 
+DROP TABLE IF EXISTS public.team_revenue_sharing;
+
+CREATE TABLE IF NOT EXISTS public.team_revenue_sharing
+(
+    sharing_id serial NOT NULL,
+    team_id integer NOT NULL,
+    role_level integer NOT NULL,
+    percentage numeric(5, 2) NOT NULL,
+    modified_by integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT team_revenue_sharing_pkey PRIMARY KEY (sharing_id),
+    CONSTRAINT team_revenue_sharing_team_id_role_level_key UNIQUE (team_id, role_level)
+);
+
+COMMENT ON TABLE public.team_revenue_sharing
+    IS 'Define los porcentajes de reparto de ingresos para cada nivel de rol';
+
+DROP TABLE IF EXISTS public.team_role_configurations;
+
 CREATE TABLE IF NOT EXISTS public.team_role_configurations
 (
     role_config_id serial NOT NULL,
@@ -904,6 +1297,41 @@ CREATE TABLE IF NOT EXISTS public.team_role_configurations
     updated_at timestamp without time zone,
     CONSTRAINT team_role_configurations_pkey PRIMARY KEY (role_config_id)
 );
+
+DROP TABLE IF EXISTS public.team_role_permissions;
+
+CREATE TABLE IF NOT EXISTS public.team_role_permissions
+(
+    permission_id serial NOT NULL,
+    team_id integer,
+    role_level integer NOT NULL,
+    permission_key character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    is_enabled boolean DEFAULT false,
+    modified_by integer,
+    modified_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT team_role_permissions_pkey PRIMARY KEY (permission_id),
+    CONSTRAINT unique_team_role_permission UNIQUE (team_id, role_level, permission_key)
+);
+
+DROP TABLE IF EXISTS public.team_settings_audit_logs;
+
+CREATE TABLE IF NOT EXISTS public.team_settings_audit_logs
+(
+    log_id serial NOT NULL,
+    team_id integer NOT NULL,
+    user_id integer NOT NULL,
+    user_role_level integer NOT NULL,
+    setting_type character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    old_value text COLLATE pg_catalog."default",
+    new_value text COLLATE pg_catalog."default",
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT team_settings_audit_logs_pkey PRIMARY KEY (log_id)
+);
+
+COMMENT ON TABLE public.team_settings_audit_logs
+    IS 'Almacena un historial de los cambios de configuración en los equipos';
+
+DROP TABLE IF EXISTS public.teammetrics;
 
 CREATE TABLE IF NOT EXISTS public.teammetrics
 (
@@ -925,6 +1353,7 @@ CREATE TABLE IF NOT EXISTS public.teammetrics
     CONSTRAINT teammetrics_team_id_key UNIQUE (team_id)
 );
 
+DROP TABLE IF EXISTS public.teammicrosites;
 
 CREATE TABLE IF NOT EXISTS public.teammicrosites
 (
@@ -941,6 +1370,8 @@ CREATE TABLE IF NOT EXISTS public.teammicrosites
     CONSTRAINT teammicrosites_team_id_key UNIQUE (team_id)
 );
 
+DROP TABLE IF EXISTS public.teamrevenuesharing;
+
 CREATE TABLE IF NOT EXISTS public.teamrevenuesharing
 (
     sharing_id serial NOT NULL,
@@ -954,17 +1385,7 @@ CREATE TABLE IF NOT EXISTS public.teamrevenuesharing
     CONSTRAINT teamrevenuesharing_team_id_role_level_key UNIQUE (team_id, role_level)
 );
 
-CREATE TABLE IF NOT EXISTS public.teamroleconfigurations
-(
-    role_config_id serial NOT NULL,
-    team_id integer,
-    level_1_name character varying(100) COLLATE pg_catalog."default" DEFAULT 'Master Guide'::character varying,
-    level_2_name character varying(100) COLLATE pg_catalog."default" DEFAULT 'Tactical Guide'::character varying,
-    level_3_name character varying(100) COLLATE pg_catalog."default" DEFAULT 'Technical Guide'::character varying,
-    level_4_name character varying(100) COLLATE pg_catalog."default" DEFAULT 'Base Guide'::character varying,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT teamroleconfigurations_pkey PRIMARY KEY (role_config_id)
-);
+DROP TABLE IF EXISTS public.teams;
 
 CREATE TABLE IF NOT EXISTS public.teams
 (
@@ -978,6 +1399,8 @@ CREATE TABLE IF NOT EXISTS public.teams
     CONSTRAINT teams_team_name_key UNIQUE (team_name)
 );
 
+DROP TABLE IF EXISTS public.user_roles;
+
 CREATE TABLE IF NOT EXISTS public.user_roles
 (
     user_role_id serial NOT NULL,
@@ -987,6 +1410,8 @@ CREATE TABLE IF NOT EXISTS public.user_roles
     CONSTRAINT user_roles_pkey PRIMARY KEY (user_role_id),
     CONSTRAINT user_roles_user_id_role_type_key UNIQUE (user_id, role_type)
 );
+
+DROP TABLE IF EXISTS public.useractivitylogs;
 
 CREATE TABLE IF NOT EXISTS public.useractivitylogs
 (
@@ -1001,7 +1426,7 @@ CREATE TABLE IF NOT EXISTS public.useractivitylogs
     CONSTRAINT useractivitylogs_pkey PRIMARY KEY (activity_log_id)
 );
 
-
+DROP TABLE IF EXISTS public.users;
 
 CREATE TABLE IF NOT EXISTS public.users
 (
@@ -1022,19 +1447,6 @@ CREATE TABLE IF NOT EXISTS public.users
     account_status character varying(20) COLLATE pg_catalog."default" DEFAULT 'active'::character varying,
     CONSTRAINT users_pkey PRIMARY KEY (user_id),
     CONSTRAINT users_email_key UNIQUE (email)
-);
-
-CREATE TABLE public.team_role_permissions
-(
-    permission_id serial NOT NULL,
-    team_id integer REFERENCES teams(team_id),
-    role_level integer NOT NULL,
-    permission_key character varying(100) NOT NULL,
-    is_enabled boolean DEFAULT false,
-    modified_by integer REFERENCES users(user_id),
-    modified_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT team_role_permissions_pkey PRIMARY KEY (permission_id),
-    CONSTRAINT unique_team_role_permission UNIQUE (team_id, role_level, permission_key)
 );
 
 ALTER TABLE IF EXISTS public.activities
@@ -1076,6 +1488,27 @@ ALTER TABLE IF EXISTS public.activities
     ON DELETE NO ACTION;
 CREATE INDEX IF NOT EXISTS idx_activities_team_id
     ON public.activities(team_id);
+
+
+ALTER TABLE IF EXISTS public.activity_available_date
+    ADD CONSTRAINT activity_available_date_activity_instance_id_fkey FOREIGN KEY (activity_instance_id)
+    REFERENCES public.guide_activity_instance (instance_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.activity_resources
+    ADD CONSTRAINT activity_resources_activity_id_fkey FOREIGN KEY (activity_id)
+    REFERENCES public.activities (activity_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.activity_resources
+    ADD CONSTRAINT activity_resources_resource_id_fkey FOREIGN KEY (resource_id)
+    REFERENCES public.resources (resource_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
 
 
 ALTER TABLE IF EXISTS public.activitylocations
@@ -1354,6 +1787,27 @@ CREATE INDEX IF NOT EXISTS idx_expeditions_team_id
     ON public.expeditions(team_id);
 
 
+ALTER TABLE IF EXISTS public.guide_activity_instance
+    ADD CONSTRAINT guide_activity_instance_activity_id_fkey FOREIGN KEY (activity_id)
+    REFERENCES public.activities (activity_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.guide_activity_instance
+    ADD CONSTRAINT guide_activity_instance_guide_id_fkey FOREIGN KEY (guide_id)
+    REFERENCES public.users (user_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.guide_activity_instance
+    ADD CONSTRAINT guide_activity_instance_team_id_fkey FOREIGN KEY (team_id)
+    REFERENCES public.teams (team_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
 ALTER TABLE IF EXISTS public.guideearnings
     ADD CONSTRAINT guideearnings_activity_id_fkey FOREIGN KEY (activity_id)
     REFERENCES public.activities (activity_id) MATCH SIMPLE
@@ -1531,13 +1985,6 @@ CREATE INDEX IF NOT EXISTS idx_invitation_usages_user_id
 
 ALTER TABLE IF EXISTS public.location_aliases
     ADD CONSTRAINT location_aliases_location_id_fkey FOREIGN KEY (location_id)
-    REFERENCES public.locations (location_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION;
-
-
-ALTER TABLE IF EXISTS public.locationaliases
-    ADD CONSTRAINT locationaliases_location_id_fkey FOREIGN KEY (location_id)
     REFERENCES public.locations (location_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION;
@@ -1848,6 +2295,20 @@ CREATE INDEX IF NOT EXISTS idx_reservations_user_id
     ON public.reservations(user_id);
 
 
+ALTER TABLE IF EXISTS public.resource_categories
+    ADD CONSTRAINT resource_categories_created_by_fkey FOREIGN KEY (created_by)
+    REFERENCES public.users (user_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.resource_categories
+    ADD CONSTRAINT resource_categories_team_id_fkey FOREIGN KEY (team_id)
+    REFERENCES public.teams (team_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
 ALTER TABLE IF EXISTS public.resourcecategories
     ADD CONSTRAINT resourcecategories_created_by_fkey FOREIGN KEY (created_by)
     REFERENCES public.users (user_id) MATCH SIMPLE
@@ -1918,6 +2379,22 @@ ALTER TABLE IF EXISTS public.routes
     ON DELETE NO ACTION;
 
 
+ALTER TABLE IF EXISTS public.team_invitations
+    ADD CONSTRAINT fk_invited_by FOREIGN KEY (invited_by_user_id)
+    REFERENCES public.users (user_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+
+
+ALTER TABLE IF EXISTS public.team_invitations
+    ADD CONSTRAINT fk_team FOREIGN KEY (team_id)
+    REFERENCES public.teams (team_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_team_invitations_team_id
+    ON public.team_invitations(team_id);
+
+
 ALTER TABLE IF EXISTS public.team_members
     ADD CONSTRAINT team_members_team_id_fkey FOREIGN KEY (team_id)
     REFERENCES public.teams (team_id) MATCH SIMPLE
@@ -1932,11 +2409,57 @@ ALTER TABLE IF EXISTS public.team_members
     ON DELETE NO ACTION;
 
 
+ALTER TABLE IF EXISTS public.team_revenue_sharing
+    ADD CONSTRAINT team_revenue_sharing_modified_by_fkey FOREIGN KEY (modified_by)
+    REFERENCES public.users (user_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+
+
+ALTER TABLE IF EXISTS public.team_revenue_sharing
+    ADD CONSTRAINT team_revenue_sharing_team_id_fkey FOREIGN KEY (team_id)
+    REFERENCES public.teams (team_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+
+
 ALTER TABLE IF EXISTS public.team_role_configurations
     ADD CONSTRAINT team_role_configurations_team_id_fkey FOREIGN KEY (team_id)
     REFERENCES public.teams (team_id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.team_role_permissions
+    ADD CONSTRAINT team_role_permissions_modified_by_fkey FOREIGN KEY (modified_by)
+    REFERENCES public.users (user_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.team_role_permissions
+    ADD CONSTRAINT team_role_permissions_team_id_fkey FOREIGN KEY (team_id)
+    REFERENCES public.teams (team_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public.team_settings_audit_logs
+    ADD CONSTRAINT team_settings_audit_logs_team_id_fkey FOREIGN KEY (team_id)
+    REFERENCES public.teams (team_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_team_settings_audit_logs_team_id
+    ON public.team_settings_audit_logs(team_id);
+
+
+ALTER TABLE IF EXISTS public.team_settings_audit_logs
+    ADD CONSTRAINT team_settings_audit_logs_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES public.users (user_id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_team_settings_audit_logs_user_id
+    ON public.team_settings_audit_logs(user_id);
 
 
 ALTER TABLE IF EXISTS public.teammetrics
@@ -1980,13 +2503,6 @@ CREATE INDEX IF NOT EXISTS idx_team_revenue_sharing_team_id
     ON public.teamrevenuesharing(team_id);
 
 
-ALTER TABLE IF EXISTS public.teamroleconfigurations
-    ADD CONSTRAINT teamroleconfigurations_team_id_fkey FOREIGN KEY (team_id)
-    REFERENCES public.teams (team_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION;
-
-
 ALTER TABLE IF EXISTS public.teams
     ADD CONSTRAINT teams_master_guide_id_fkey FOREIGN KEY (master_guide_id)
     REFERENCES public.users (user_id) MATCH SIMPLE
@@ -2009,15 +2525,7 @@ ALTER TABLE IF EXISTS public.useractivitylogs
 CREATE INDEX IF NOT EXISTS idx_user_activity_logs_user_id
     ON public.useractivitylogs(user_id);
 
-
-ALTER TABLE IF EXISTS public.userroles
-    ADD CONSTRAINT userroles_user_id_fkey FOREIGN KEY (user_id)
-    REFERENCES public.users (user_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION;
-
 END;
-
 
 
 -- =============================================
