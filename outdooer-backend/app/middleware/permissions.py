@@ -4,6 +4,7 @@ from flask import request, jsonify, g
 from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 from app.models.team_member import TeamMember
 from app.models.team_role_configuration import TeamRoleConfiguration
+from app.models.team_role_permissions import TeamRolePermissions
 from app.models.expedition import Expedition
 from app.models.activity import Activity
 
@@ -52,8 +53,28 @@ def check_role_permission(operation):
             
             role_level = team_membership.role_level
             
+            # First check team-specific permissions
+            permission_key = operation
+            team_permission = TeamRolePermissions.query.filter_by(
+                team_id=team_id,
+                role_level=role_level,
+                permission_key=permission_key
+            ).first()
+            
+            # If team-specific permission exists, use it
+            if team_permission:
+                has_permission = team_permission.is_enabled
+            else:
+                # Fall back to global role configuration
+                global_permission = TeamRoleConfiguration.query.filter_by(
+                    role_level=role_level,
+                    operation=operation
+                ).first()
+                
+                has_permission = global_permission.is_permitted if global_permission else False
+            
             # Special case for update operations - Technical Guides can update their own resources
-            if operation in ['update_expedition', 'update_activity'] and role_level == 3:
+            if not has_permission and operation in ['update_expedition', 'update_activity'] and role_level == 3:
                 if 'expedition' in operation:
                     resource = Expedition.query.get_or_404(resource_id)
                 else:
@@ -61,20 +82,14 @@ def check_role_permission(operation):
                 
                 # Technical Guides can update their own creations or ones they lead
                 if resource.created_by == current_user_id or getattr(resource, 'leader_id', None) == current_user_id:
-                    # Store role_level in flask.g for the route function
-                    g.role_level = role_level
-                    g.team_id = team_id
-                    return func(*args, **kwargs)
+                    has_permission = True
             
-            # Check permission in the role configuration table
-            permission = TeamRoleConfiguration.query.filter_by(
-                role_level=role_level,
-                operation=operation
-            ).first()
-            
-            if not permission or not permission.is_permitted:
+            if not has_permission:
+                role_names = {1: 'Master Guide', 2: 'Tactical Guide', 3: 'Technical Guide', 4: 'Base Guide'}
+                role_name = role_names.get(role_level, f'Level {role_level} Guide')
+                
                 return jsonify({
-                    'error': f'Your role level ({role_level}) does not have permission to {operation.replace("_", " ")}'
+                    'error': f'{role_name}s do not have permission to {operation.replace("_", " ")}'
                 }), 403
             
             # Store role_level in flask.g for the route function

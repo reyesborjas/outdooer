@@ -925,17 +925,7 @@ CREATE TABLE IF NOT EXISTS public.teammetrics
     CONSTRAINT teammetrics_team_id_key UNIQUE (team_id)
 );
 
-CREATE TABLE IF NOT EXISTS public.team_role_permissions
-(
-    permission_id serial not null,
-    team_id integer,
-    role_level integer,
-    permission_key character varying(100),
-    is_enabled bolean,
-    modified_by integer,
-    modified_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    
-)
+
 CREATE TABLE IF NOT EXISTS public.teammicrosites
 (
     microsite_id serial NOT NULL,
@@ -1034,7 +1024,18 @@ CREATE TABLE IF NOT EXISTS public.users
     CONSTRAINT users_email_key UNIQUE (email)
 );
 
-
+CREATE TABLE public.team_role_permissions
+(
+    permission_id serial NOT NULL,
+    team_id integer REFERENCES teams(team_id),
+    role_level integer NOT NULL,
+    permission_key character varying(100) NOT NULL,
+    is_enabled boolean DEFAULT false,
+    modified_by integer REFERENCES users(user_id),
+    modified_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT team_role_permissions_pkey PRIMARY KEY (permission_id),
+    CONSTRAINT unique_team_role_permission UNIQUE (team_id, role_level, permission_key)
+);
 
 ALTER TABLE IF EXISTS public.activities
     ADD CONSTRAINT activities_activity_type_id_fkey FOREIGN KEY (activity_type_id)

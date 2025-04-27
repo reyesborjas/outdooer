@@ -3,10 +3,13 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.permission_service import PermissionService
 from app.models.team_role_configuration import TeamRoleConfiguration
+from app.models.team_role_permissions import TeamRolePermissions
 from app.models.expedition import Expedition
 from app.models.activity import Activity
 from app.models.team_member import TeamMember
+from app.models.team import Team
 from app.database import db
+from app.models.user import UserRole
 
 # Import the blueprint from __init__.py
 from app.api.permissions import permissions_bp
@@ -78,28 +81,8 @@ def get_user_permissions():
     try:
         current_user_id = get_jwt_identity()
         
-        # Get all teams the user is a member of
-        team_memberships = TeamMember.query.filter_by(user_id=current_user_id).all()
-        
-        user_permissions = {}
-        
-        # For each team, get the permissions based on role level
-        for membership in team_memberships:
-            team_id = membership.team_id
-            role_level = membership.role_level
-            
-            # Get all permissions for this role level
-            permissions = TeamRoleConfiguration.query.filter_by(
-                role_level=role_level,
-                is_permitted=True
-            ).all()
-            
-            # Store permissions by team
-            if team_id not in user_permissions:
-                user_permissions[team_id] = []
-                
-            for permission in permissions:
-                user_permissions[team_id].append(permission.operation)
+        # Get permissions using the service
+        user_permissions = PermissionService.get_user_permissions(current_user_id)
         
         return jsonify({
             'user_id': current_user_id,
@@ -113,7 +96,7 @@ def get_user_permissions():
 @jwt_required()
 def get_role_configurations():
     """
-    Get all role configurations
+    Get all global role configurations (defaults for all teams)
     """
     try:
         # Get all role configurations
@@ -137,6 +120,130 @@ def get_role_configurations():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@permissions_bp.route('/team/<int:team_id>/permissions', methods=['GET'])
+@jwt_required()
+def get_team_permissions(team_id):
+    """
+    Get all permission settings for a specific team
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # Check if user is a member of the team
+        team_membership = TeamMember.query.filter_by(
+            user_id=current_user_id,
+            team_id=team_id
+        ).first()
+        
+        if not team_membership:
+            return jsonify({'error': 'You are not a member of this team'}), 403
+        
+        # Only Master Guide and Tactical Guide can view team permissions
+        if team_membership.role_level > 2:
+            return jsonify({'error': 'Only Master Guides and Tactical Guides can view team permissions'}), 403
+        
+        # Get team permissions
+        team_permissions = PermissionService.get_team_permissions(team_id)
+        
+        # Get team's role configuration names
+        team = Team.query.get_or_404(team_id)
+        role_config = team.role_config
+        
+        role_names = {
+            1: role_config.level_1_name if role_config else 'Master Guide',
+            2: role_config.level_2_name if role_config else 'Tactical Guide',
+            3: role_config.level_3_name if role_config else 'Technical Guide',
+            4: role_config.level_4_name if role_config else 'Base Guide'
+        }
+        
+        result = {
+            'team_id': team_id,
+            'team_name': team.team_name,
+            'role_names': role_names,
+            'permissions': team_permissions,
+            'can_edit': team_membership.role_level == 1  # Only Master Guide can edit
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@permissions_bp.route('/team/<int:team_id>/permissions', methods=['POST'])
+@jwt_required()
+def update_team_permissions(team_id):
+    """
+    Update permission settings for a specific team
+    """
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        # Check if user is a Master Guide for this team
+        team_membership = TeamMember.query.filter_by(
+            user_id=current_user_id,
+            team_id=team_id
+        ).first()
+        
+        if not team_membership or team_membership.role_level != 1:
+            return jsonify({'error': 'Only Master Guides can update team permissions'}), 403
+        
+        # Validate data format
+        if not isinstance(data, dict) or 'permissions' not in data:
+            return jsonify({'error': 'Invalid data format. Expected "permissions" object'}), 400
+        
+        permissions = data.get('permissions', {})
+        
+        # Update the permissions
+        updated_count = 0
+        
+        for role_level_str, role_permissions in permissions.items():
+            try:
+                role_level = int(role_level_str)
+                if role_level < 1 or role_level > 4:
+                    return jsonify({'error': f'Invalid role level: {role_level}'}), 400
+            except ValueError:
+                return jsonify({'error': f'Invalid role level: {role_level_str}'}), 400
+            
+            for permission_key, is_enabled in role_permissions.items():
+                # Find or create the permission
+                permission = TeamRolePermissions.query.filter_by(
+                    team_id=team_id,
+                    role_level=role_level,
+                    permission_key=permission_key
+                ).first()
+                
+                if permission:
+                    # Update existing permission
+                    if permission.is_enabled != is_enabled:
+                        permission.is_enabled = is_enabled
+                        permission.modified_by = current_user_id
+                        permission.modified_at = db.func.now()
+                        updated_count += 1
+                else:
+                    # Create new permission
+                    new_permission = TeamRolePermissions(
+                        team_id=team_id,
+                        role_level=role_level,
+                        permission_key=permission_key,
+                        is_enabled=is_enabled,
+                        modified_by=current_user_id
+                    )
+                    db.session.add(new_permission)
+                    updated_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Successfully updated {updated_count} team permissions',
+            'team_id': team_id,
+            'updated_count': updated_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @permissions_bp.route('/sync-permissions', methods=['POST'])
 @jwt_required()
 def sync_permissions():
@@ -145,6 +252,13 @@ def sync_permissions():
     This is useful for updating the permissions after a new version is released
     """
     try:
+        # Ensure user is an admin
+        current_user_id = get_jwt_identity()
+        admin_role = UserRole.query.filter_by(user_id=current_user_id, role_type='admin').first()
+        
+        if not admin_role:
+            return jsonify({'error': 'Only administrators can sync permissions'}), 403
+        
         # Import the setup function
         from app.scripts.setup_role_configurations import setup_role_configurations
         
