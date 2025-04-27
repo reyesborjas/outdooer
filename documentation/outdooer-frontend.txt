@@ -1,0 +1,345 @@
+# Outdooer Frontend Technical Documentation
+
+## 1. Overview
+
+The Outdooer platform is a React-based web application designed to connect outdoor enthusiasts with certified guides for various outdoor activities and expeditions. The frontend is built using:
+
+- **React 19** with functional components and hooks
+- **React Router v6** for navigation and routing
+- **React Bootstrap** for UI components
+- **Axios** for API calls
+- **Formik** for form handling
+- **Yup** for form validation
+- **i18next** for internationalization
+- **Vite** as the build tool
+
+## 2. Project Structure
+
+```
+outdooer-frontend/
+├── public/              # Static assets
+├── src/
+│   ├── api/             # API integration layer
+│   ├── assets/          # Images, styles, and other assets
+│   ├── components/      # Reusable UI components
+│   │   ├── common/      # Generic components like LoadingSpinner
+│   │   ├── layout/      # Layout components like Footer, Navbar
+│   │   ├── auth/        # Authentication related components
+│   │   ├── team/        # Team management components
+│   │   └── ...
+│   ├── context/         # React context providers
+│   ├── hooks/           # Custom React hooks
+│   ├── i18n/            # Internationalization setup
+│   ├── pages/           # Page components
+│   ├── styles/          # CSS styles
+│   ├── utils/           # Utility functions
+│   ├── App.jsx          # Main app component
+│   ├── Router.jsx       # Application routing
+│   └── main.jsx         # Entry point
+├── .eslintrc.js         # ESLint configuration
+├── package.json         # Project dependencies
+└── vite.config.js       # Vite configuration
+```
+
+## 3. Key Components
+
+### 3.1 Authentication Flow
+
+The authentication system is built around the `AuthContext` which provides:
+
+- User authentication state
+- Login, register, and logout functionality
+- Role-based access control
+- Permission checking
+
+```jsx
+// src/context/AuthContext.jsx
+export const AuthContext = createContext(null);
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Authentication methods
+  const login = async (email, password) => {...}
+  const register = async (userData) => {...}
+  const logout = async () => {...}
+  
+  // Role and permission checks
+  const isAuthenticated = () => !!user;
+  const isAdmin = () => user?.roles?.includes('admin');
+  const isGuide = () => user?.roles?.includes('guide');
+  // ...
+};
+```
+
+### 3.2 API Layer
+
+The API layer is organized by domain and uses Axios for HTTP calls:
+
+```jsx
+// src/api/index.js
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  // ...
+);
+```
+
+Domain-specific API modules:
+- `auth.js` - Authentication APIs
+- `activities.js` - Activity management APIs
+- `expedition.js` - Expedition management APIs
+- `permissions.js` - Permission checking APIs
+
+### 3.3 Routing
+
+The routing system is defined in `src/Router.jsx` using React Router v6 with a role-based access control system:
+
+```jsx
+// src/Router.jsx
+const Router = () => {
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      
+      {/* Protected routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Route>
+      
+      {/* Role-specific routes */}
+      <Route element={<ProtectedRoute requiredRoles={['guide', 'master_guide']} />}>
+        <Route path="/create-activity" element={<NewActivity />} />
+        <Route path="/activities/:activityId/edit" element={<EditActivity />} />
+      </Route>
+      
+      {/* Admin routes */}
+      <Route element={<ProtectedRoute requiredRoles={['admin']} />}>
+        <Route path="/admin" element={<div>Admin Dashboard</div>} />
+      </Route>
+    </Routes>
+  );
+};
+```
+
+This is implemented using the `ProtectedRoute` component:
+
+```jsx
+// src/components/common/ProtectedRoute.jsx
+const ProtectedRoute = ({ requiredRoles = [], requiredLevel = null }) => {
+  const { isAuthenticated, isInitialized, loading, hasRoleLevel } = useContext(AuthContext);
+  
+  // Check authentication and roles
+  // ...
+  
+  return <Outlet />;
+};
+```
+
+### 3.4 Core Features
+
+#### Activities Management
+- Creation, editing, and viewing of outdoor activities
+- Activity scheduling with available dates
+- Role-based permissions for activity management
+
+#### Expeditions Management
+- Creation of multi-day expeditions with multiple activities
+- Participant management
+- Expedition date and itinerary planning
+
+#### Team Management
+- Team creation and member management
+- Role-based permissions within teams
+- Invitation system for new team members
+
+## 4. User Roles
+
+The system has a hierarchical role structure:
+
+1. **Admin** - Platform administrators with full access
+2. **Master Guide** - Team owners with the highest authority in a team
+3. **Tactical Guide** - High-level guides who can manage some team aspects
+4. **Technical Guide** - Regular guides who can create activities
+5. **Base Guide** - Entry-level guides with limited permissions
+6. **Explorer** - End users who book activities and expeditions
+
+## 5. Potential Issues & Troubleshooting
+
+### 5.1 Authentication Issues
+
+**Symptoms:**
+- Unexpected logouts
+- "Unauthorized" errors when accessing protected routes
+
+**Troubleshooting:**
+1. Check token expiration and refresh mechanism
+2. Verify that `localStorage.getItem('token')` is working correctly
+3. Ensure API interceptors are properly handling 401 responses
+
+```jsx
+// In the API interceptor
+if (error.response && error.response.status === 401) {
+  localStorage.removeItem('token');
+  window.location.href = '/login';
+}
+```
+
+### 5.2 Route Access Problems
+
+**Symptoms:**
+- Users redirected to `/unauthorized` despite having correct permissions
+- Access to routes that should be restricted
+
+**Troubleshooting:**
+1. Check `requiredRoles` array in route definitions
+2. Verify role checking functions in `AuthContext`
+3. Ensure user role data is correctly loaded from the API
+
+### 5.3 API Connection Issues
+
+**Symptoms:**
+- Network errors in console
+- "Failed to load data" errors
+
+**Troubleshooting:**
+1. Verify API base URL in the config
+2. Check CORS settings in both frontend and backend
+3. Ensure proper error handling in API calls
+
+```jsx
+// Add this to vite.config.js
+server: {
+  proxy: {
+    '/api': {
+      target: 'http://localhost:5000',
+      changeOrigin: true,
+    },
+  },
+}
+```
+
+## 6. Recommended Improvements
+
+### 6.1 Code Structure
+
+1. **Implement TypeScript**
+   - Add type definitions for API responses, state, and props
+   - Improves code reliability and developer experience
+
+2. **Enhance Error Handling**
+   - Create a global error boundary
+   - Implement more comprehensive error handling in API calls
+   - Add error logging service
+
+3. **Add Unit and Integration Tests**
+   - Add Jest/React Testing Library for component testing
+   - Add Cypress for end-to-end testing
+   - Focus on critical paths: authentication, activity creation, expedition management
+
+### 6.2 Performance Improvements
+
+1. **Implement Code Splitting**
+   - Use React.lazy and Suspense for route-based code splitting
+
+   ```jsx
+   const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+   
+   // In Router.jsx
+   <Suspense fallback={<LoadingSpinner />}>
+     <Route path="/dashboard" element={<Dashboard />} />
+   </Suspense>
+   ```
+
+2. **Optimize Bundle Size**
+   - Add bundle analyzer to identify large dependencies
+   - Consider replacing heavy libraries with lighter alternatives
+
+3. **Add Caching Strategy**
+   - Implement React Query for data fetching and caching
+   - Add service worker for asset caching
+
+### 6.3 UX Improvements
+
+1. **Form Handling Enhancements**
+   - Complete the implementation of Formik and Yup validation
+   - Add more informative error messages
+   - Improve form accessibility
+
+2. **Responsive Design**
+   - Enhance mobile responsiveness in complex pages like activity creation
+   - Implement responsive tables for data-heavy pages
+
+3. **Accessibility**
+   - Add ARIA attributes to custom components
+   - Ensure proper focus management
+   - Implement keyboard navigation
+
+### 6.4 Feature Enhancements
+
+1. **Offline Support**
+   - Add PWA capabilities for basic offline functionality
+   - Implement local data caching for critical features
+
+2. **Complete i18n Implementation**
+   - Finish internationalization setup
+   - Add language selector in user settings
+
+3. **Enhanced User Dashboard**
+   - Add activity and expedition analytics
+   - Implement calendar view for scheduled activities
+
+4. **Image Upload**
+   - Add direct image upload for activities and profiles
+   - Implement image optimization and CDN integration
+
+## 7. Development Workflow
+
+### 7.1 Setup Instructions
+
+1. Clone the repository
+2. Install dependencies:
+   ```
+   npm install
+   ```
+3. Create `.env` file with required environment variables:
+   ```
+   VITE_API_URL=http://localhost:5000/api
+   ```
+4. Start development server:
+   ```
+   npm run dev
+   ```
+
+### 7.2 Build and Deployment
+
+1. Build the application:
+   ```
+   npm run build
+   ```
+2. Preview the build:
+   ```
+   npm run preview
+   ```
+3. Deploy the `/dist` directory to your hosting provider
+
+## 8. Conclusion
+
+The Outdooer frontend provides a solid foundation for an outdoor activity booking platform. The use of modern React patterns and a clean project structure ensures scalability. With the suggested improvements, particularly in the areas of type safety, testing, and performance optimization, the application can be further enhanced to provide a better user and developer experience.

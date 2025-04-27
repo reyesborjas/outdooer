@@ -1,0 +1,280 @@
+# Outdooer Project: Comprehensive Developer Guide
+
+## Project Overview
+
+Outdooer is a platform for outdoor activity guides to manage their activities, expeditions, and teams. The application follows a client-server architecture with a Flask backend API and a React frontend. This guide provides a comprehensive overview of the backend architecture, API routes, data models, and the corresponding frontend structure to help developers understand and work with the codebase.
+
+## System Architecture
+
+### Backend (Flask)
+
+The backend is a Flask application organized using the application factory pattern with the following components:
+
+- **Models**: SQLAlchemy models representing database entities
+- **Routes/Controllers**: API endpoints organized by resource
+- **Services**: Business logic separated from controllers
+- **Middleware**: Cross-cutting concerns like authentication and permissions
+- **Utils**: Helper functions and utilities
+
+### Frontend (React)
+
+The frontend is built with React and structured around these key concepts:
+
+- **Pages**: Main view components for routing
+- **Components**: Reusable UI elements
+- **Contexts**: State management (especially for authentication)
+- **Services**: API integration for backend communication
+
+## Data Models
+
+### Core Entities
+
+1. **User**
+   - Standard user attributes (email, name, etc.)
+   - Relationships to teams, activities, and expeditions
+
+2. **Team**
+   - Groups of guides working together
+   - Hierarchical structure with different guide levels
+
+3. **Activity**
+   - Individual outdoor events (hiking, kayaking, etc.)
+   - Linked to locations, types, and resources
+
+4. **Expedition**
+   - Multi-day adventures consisting of multiple activities
+   - More complex than activities, with routes and locations
+
+5. **Location**
+   - Geographic information for activities and expeditions
+   - Contains coordinates, elevation, and metadata
+
+## Role-Based Permission System
+
+The application uses a sophisticated 4-level role hierarchy within teams:
+
+1. **Master Guide (Level 1)**: Team owners with full permissions
+2. **Tactical Guide (Level 2)**: Team administrators with extensive but limited permissions
+3. **Technical Guide (Level 3)**: Specialized guides with limited management permissions
+4. **Base Guide (Level 4)**: Entry-level guides with minimal permissions
+
+Permissions are stored in:
+- `team_role_configurations`: Default settings for guide levels
+- `team_role_permissions`: Team-specific permission overrides
+
+## API Endpoints
+
+### Authentication
+
+- `POST /api/auth/login`: User login
+- `POST /api/auth/register`: User registration
+- `GET /api/auth/me`: Get current user profile
+
+### Activities
+
+- `GET /api/activities`: List all activities
+- `GET /api/activities/{activity_id}`: Get a specific activity
+- `POST /api/activities`: Create a new activity
+- `PUT /api/activities/{activity_id}`: Update an activity
+- `DELETE /api/activities/{activity_id}`: Delete an activity
+- `GET /api/activities/my-activities`: Get activities for the current user
+- `GET /api/activities/team/{team_id}`: Get activities for a specific team
+- `GET /api/activities/check-similar`: Find similar activities
+
+### Activity Dates
+
+- `GET /api/activity-dates/for-activity/{activity_id}`: Get available dates for an activity
+- `POST /api/activity-dates/add-date`: Add a new available date
+- `PUT /api/activity-dates/activity-dates/{date_id}`: Update an activity date
+- `DELETE /api/activity-dates/activity-dates/{date_id}`: Delete an activity date
+- `GET /api/activity-dates/guide-instances`: Get guide instances
+- `POST /api/activity-dates/guide-instances`: Create a guide instance
+- `GET /api/activity-dates/my-dates`: Get current guide's activity dates
+
+### Teams
+
+- `GET /api/teams/my-teams`: Get teams for current user
+- `GET /api/teams/{team_id}`: Get team details
+- `GET /api/teams/{team_id}/members`: Get team members
+- `POST /api/teams`: Create a new team
+- `PUT /api/teams/{team_id}`: Update a team
+- `DELETE /api/teams/{team_id}`: Delete a team
+- `PUT /api/teams/{team_id}/role-config`: Update team role configuration
+- `PUT /api/teams/{team_id}/members/{user_id}/role`: Update member role
+- `DELETE /api/teams/{team_id}/members/{user_id}`: Remove a team member
+- `POST /api/teams/{team_id}/invitations`: Generate invitation code
+- `GET /api/teams/{team_id}/invitations`: Get team invitations
+
+### Expeditions
+
+- `GET /api/expeditions`: List all expeditions
+- `GET /api/expeditions/{expedition_id}`: Get expedition details
+- `POST /api/expeditions`: Create a new expedition
+- `PUT /api/expeditions/{expedition_id}`: Update an expedition
+- `DELETE /api/expeditions/{expedition_id}`: Delete an expedition
+- `GET /api/expeditions/created-by/{user_id}`: Get expeditions created by a user
+- `GET /api/expeditions/led-by/{user_id}`: Get expeditions led by a user
+- `GET /api/expeditions/{expedition_id}/activities`: Get expedition activities
+- `POST /api/expeditions/{expedition_id}/activities`: Add activities to an expedition
+
+### Resources
+
+- `GET /api/resources`: Get all resources
+- `GET /api/resources/team/{team_id}`: Get team resources
+- `POST /api/resources`: Create a resource
+- `PUT /api/resources/{resource_id}`: Update a resource
+- `DELETE /api/resources/{resource_id}`: Delete a resource
+- `GET /api/resources/categories`: Get resource categories
+- `GET /api/resources/categories/team/{team_id}`: Get team resource categories
+- `POST /api/resources/categories`: Create a resource category
+- `PUT /api/resources/categories/{category_id}`: Update a resource category
+- `DELETE /api/resources/categories/{category_id}`: Delete a resource category
+
+### Invitations
+
+- `POST /api/invitations/generate`: Generate invitation code
+- `GET /api/invitations/validate/{code}`: Validate invitation code
+- `GET /api/invitations/details/{code}`: Get invitation details
+
+### Locations
+
+- `GET /api/locations`: Get all locations
+- `GET /api/locations/search?q={query}`: Search locations
+
+### Permissions
+
+- `POST /api/permissions/check`: Check user permission
+- `GET /api/permissions/user`: Get user permissions
+- `GET /api/permissions/role-configurations`: Get global role configurations
+- `GET /api/permissions/team/{team_id}/permissions`: Get team permissions
+- `POST /api/permissions/team/{team_id}/permissions`: Update team permissions
+- `POST /api/permissions/sync-permissions`: Sync permissions with defaults
+
+## Required Frontend Components
+
+Based on the backend structure, the frontend needs these key components:
+
+### Authentication and User Management
+
+- **Login Page**: Form for user authentication
+- **Registration Page**: Form for new user registration
+- **User Profile**: Display and edit user information
+- **AuthContext**: Context provider for authentication state
+
+### Activity Management
+
+- **ActivityList**: Display activities with filtering
+- **ActivityDetail**: Show detailed activity information
+- **ActivityForm**: Create/edit activity data
+- **SimilarActivityWarning**: Alert for duplicate activities
+- **ActivityDates**: Manage activity availability dates
+
+### Team Management
+
+- **TeamList**: Display user's teams
+- **TeamDetail**: Team information and management
+- **TeamMemberList**: Display and manage team members
+- **RoleConfiguration**: Configure team roles
+- **InvitationGenerator**: Create invitation codes
+
+### Expedition Management
+
+- **ExpeditionList**: Display expeditions
+- **ExpeditionDetail**: Show expedition information
+- **ExpeditionForm**: Create/edit expeditions
+- **ExpeditionActivities**: Manage activities in an expedition
+
+### Resource Management
+
+- **ResourceList**: Display team resources
+- **ResourceForm**: Create/edit resources
+- **ResourceCategoryList**: Display resource categories
+- **ResourceCategoryForm**: Create/edit resource categories
+
+### Location Components
+
+- **LocationSearch**: Search locations for activities
+- **LocationSelector**: Select locations on a map
+- **LocationDetail**: Display location information
+
+## Implementation Notes
+
+### Backend Considerations
+
+1. **Permission System**: Carefully follow the role-based permission system. The application uses both global permissions and team-specific overrides.
+
+2. **Relationship Management**: Pay attention to complex relationships between models, especially for expeditions, which relate to multiple activities, resources, and locations.
+
+3. **Error Handling**: Be consistent with error responses. The API uses standard formats that the frontend expects.
+
+4. **Database Schema**: Several tables have unique constraints, especially on team-specific resources. Review these constraints before adding or updating records.
+
+### Frontend Implementation Advice
+
+1. **Permission-Aware Components**: UI components should respect user permissions. Master Guides see more options than Base Guides.
+
+2. **Form Validation**: Implement validation that mirrors backend validation to provide quick feedback to users.
+
+3. **Data Fetching**: Create reusable API services for each resource type to maintain consistent API interaction.
+
+4. **State Management**: Use React context for global state (authentication, current team) and local state for component-specific concerns.
+
+## Common Issues and Solutions
+
+1. **Circular Imports**: The backend has had issues with circular dependencies. Use absolute imports with the `app.` prefix.
+
+2. **Permission Checks**: Many operations require specific role levels. Always check permissions before showing UI elements that trigger restricted operations.
+
+3. **Team Context**: Most operations happen within a team context. Always include the team_id in requests where relevant.
+
+4. **Invitation System**: The invitation system uses role-specific prefixes and metadata. Pay attention to this when generating or validating codes.
+
+## Development Setup
+
+### Backend Setup
+
+1. Create a virtual environment and install dependencies:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+2. Set up environment variables in a `.env` file:
+```
+FLASK_APP=run.py
+FLASK_ENV=development
+SECRET_KEY=your-secret-key
+JWT_SECRET_KEY=your-jwt-secret
+
+# Database connection
+DB_USER=postgres
+DB_PASSWORD=123456789
+DB_HOST=localhost
+DB_PORT=5434
+DB_NAME=outdooer
+```
+
+3. Initialize the database:
+```bash
+python db_setup.py --reset
+```
+
+4. Run the application:
+```bash
+python run.py
+```
+
+### Frontend Setup
+
+1. Create a configuration file for API endpoints
+2. Set up authentication service to manage tokens
+3. Implement API services for each resource type
+4. Create context providers for application state
+5. Develop UI components based on backend models and operations
+
+## Conclusion
+
+The Outdooer application has a well-structured backend with a complex permission system that the frontend needs to integrate with carefully. By understanding the models, API endpoints, and permission hierarchy, frontend developers can create an intuitive and secure user interface that properly utilizes the backend capabilities.
+
+Following this guide will help ensure that the frontend and backend work together seamlessly, providing a consistent and feature-rich application for outdoor activity guides.
