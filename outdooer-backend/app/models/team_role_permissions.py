@@ -7,7 +7,7 @@ class TeamRolePermissions(db.Model):
     Maps to the team_role_permissions table for team-specific permissions.
     """
     __tablename__ = 'team_role_permissions'
-    
+    __table_args__ = {'extend_existing': True}
     permission_id = db.Column(db.Integer, primary_key=True)
     team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=False)  # Must be non-null for team permissions
     role_level = db.Column(db.Integer, nullable=False)  # 1=Master, 2=Tactical, 3=Technical, 4=Base

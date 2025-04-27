@@ -17,7 +17,7 @@ from app.models.team_role_configuration import TeamRoleConfiguration
 from app.models.team_member import TeamMember
 
 # 6. Import global role permissions model
-from app.models.global_role_permissions import GlobalRolePermission
+
 
 # 7. Import team role permissions model (if you have a separate model)
 from app.models.team_role_permissions import TeamRolePermissions

@@ -7,7 +7,7 @@ class TeamRoleConfiguration(db.Model):
     Maps to the team_role_configurations table in the database.
     """
     __tablename__ = 'team_role_configurations'
-    
+    __table_args__ = {'extend_existing': True}
     role_config_id = db.Column(db.Integer, primary_key=True)
     team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'))
     level_1_name = db.Column(db.String(100), default='Master Guide')

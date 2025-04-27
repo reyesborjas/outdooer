@@ -1,5 +1,5 @@
 # app/scripts/setup_role_configurations.py
-from app.models.global_role_permissions import GlobalRolePermission
+from app.models.team_role_permissions import TeamRolePermissions
 from app import db
 
 def setup_role_configurations():
@@ -14,7 +14,7 @@ def setup_role_configurations():
     4 = Base Guide (lowest authority)
     """
     # Remove any existing global configurations to avoid duplicates
-    GlobalRolePermission.query.filter_by(team_id=None).delete()
+    TeamRolePermissions.query.filter_by(team_id=None).delete()
     
     # Define the global permissions configurations
     configurations = [
@@ -69,7 +69,7 @@ def setup_role_configurations():
     
     # Add configurations to database
     for config in configurations:
-        role_perm = GlobalRolePermission(
+        role_perm = TeamRolePermissions(
             team_id=None,  # NULL for global permissions
             role_level=config['role_level'],
             permission_key=config['permission_key'],

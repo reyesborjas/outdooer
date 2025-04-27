@@ -1,7 +1,7 @@
 # app/services/permission_service.py - Updated to use the new models
 from app.models.team_member import TeamMember
 from app.models.team_role_permissions import TeamRolePermissions
-from app.models.global_role_permissions import GlobalRolePermission
+from app.models.team_role_permissions import TeamRolePermissions
 from app.database import db
 
 class PermissionService:
@@ -60,7 +60,7 @@ class PermissionService:
             has_permission = team_permission.is_enabled
         else:
             # Fall back to global role permission
-            global_permission = GlobalRolePermission.query.filter_by(
+            global_permission = TeamRolePermissions.query.filter_by(
                 team_id=None,
                 role_level=role_level,
                 permission_key=permission_key
@@ -249,7 +249,7 @@ class PermissionService:
         Returns:
             dict: Permissions organized by role level
         """
-        permissions = GlobalRolePermission.query.filter_by(team_id=None).all()
+        permissions = TeamRolePermissions.query.filter_by(team_id=None).all()
         
         result = {1: {}, 2: {}, 3: {}, 4: {}}
         
@@ -298,7 +298,7 @@ class PermissionService:
                 result[team_id].append(permission.permission_key)
             
             # Add fallback to global permissions if no team-specific permission exists
-            global_permissions = GlobalRolePermission.query.filter_by(
+            global_permissions = TeamRolePermissions.query.filter_by(
                 team_id=None,
                 role_level=role_level,
                 is_enabled=True

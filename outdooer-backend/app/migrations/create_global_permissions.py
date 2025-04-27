@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from flask import Flask
 from app import create_app, db
-from app.models.global_role_permissions import GlobalRolePermission
+from app.models.team_role_permissions import TeamRolePermissions
 from app.models.user import User
 
 def run_migration():
@@ -32,7 +32,7 @@ def run_migration():
             modified_by = admin.user_id if admin else None
             
             # Check if global permissions already exist
-            existing_globals = GlobalRolePermission.query.filter_by(team_id=None).count()
+            existing_globals = TeamRolePermissions.query.filter_by(team_id=None).count()
             if existing_globals > 0:
                 print(f"{existing_globals} global permissions already exist. Skipping creation.")
                 return
@@ -98,7 +98,7 @@ def run_migration():
             
             for role_level, permissions in default_permissions.items():
                 for perm in permissions:
-                    global_perm = GlobalRolePermission(
+                    global_perm = TeamRolePermissions(
                         team_id=None,  # NULL for global permissions
                         role_level=role_level,
                         permission_key=perm['key'],

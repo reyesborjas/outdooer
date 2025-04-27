@@ -33,30 +33,6 @@ class Team(db.Model):
         }
 
 
-class TeamRoleConfiguration(db.Model):
-    __tablename__ = 'team_role_configurations'
-    
-    role_config_id = db.Column(db.Integer, primary_key=True)
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.team_id'), nullable=False)
-    level_1_name = db.Column(db.String(100), default='Master Guide')
-    level_2_name = db.Column(db.String(100), default='Tactical Guide')
-    level_3_name = db.Column(db.String(100), default='Technical Guide')
-    level_4_name = db.Column(db.String(100), default='Base Guide')
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<TeamRoleConfiguration for {self.team_id}>'
-    
-    def to_dict(self):
-        return {
-            'role_config_id': self.role_config_id,
-            'team_id': self.team_id,
-            'level_1_name': self.level_1_name,
-            'level_2_name': self.level_2_name,
-            'level_3_name': self.level_3_name,
-            'level_4_name': self.level_4_name,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
 
 
 class TeamRevenueSharing(db.Model):
